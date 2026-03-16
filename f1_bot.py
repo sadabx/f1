@@ -52,10 +52,20 @@ next_gp_message = None
 current_next_round = None
 
 def to_unix(date_str, time_str):
-    dt_str = f"{date_str}T{time_str}"
-    dt = datetime.strptime(dt_str, "%Y-%m-%dT%H:%M:%SZ")
-    dt = dt.replace(tzinfo=timezone.utc)
-    return int(dt.timestamp())
+    """Safely converts API time to Unix, with a fallback if the API is missing data."""
+    try:
+        dt_str = f"{date_str}T{time_str}"
+        dt = datetime.strptime(dt_str, "%Y-%m-%dT%H:%M:%SZ")
+        dt = dt.replace(tzinfo=timezone.utc)
+        return int(dt.timestamp())
+    except Exception:
+        # Fallback if the F1 API forgets to provide a specific session time
+        try:
+            dt = datetime.strptime(date_str, "%Y-%m-%d")
+            dt = dt.replace(tzinfo=timezone.utc)
+            return int(dt.timestamp())
+        except:
+            return 0 
 
 def format_session(api_key, date_str, time_str, current_time):
     name_map = {
@@ -66,6 +76,7 @@ def format_session(api_key, date_str, time_str, current_time):
     }
     display_name = name_map.get(api_key, api_key)
     unix_time = to_unix(date_str, time_str)
+    
     line = f"`{display_name}`: <t:{unix_time}:F> (<t:{unix_time}:R>)"
     if unix_time < current_time:
         return f"> ~~{line}~~"
@@ -97,8 +108,8 @@ async def fetch_api_data():
     schedule_cache = response['MRData']['RaceTable']['Races']
     print("F1 Schedule data refreshed from API.")
 
-# Increased loop interval to 3 minutes to avoid Discord API rate limits
-@tasks.loop(minutes=3)
+# Extended to 5 minutes to completely bypass Discord Rate Limits (Error 429)
+@tasks.loop(minutes=5)
 async def dashboard_manager():
     global calendar_messages, next_gp_message, current_next_round
     
@@ -107,11 +118,11 @@ async def dashboard_manager():
 
     current_time = time.time()
     
-    # 1. FIND THE NEXT GP
+    # --- 1. FIND THE NEXT GP ---
     upcoming_races = [r for r in schedule_cache if to_unix(r['date'], r['time']) > current_time]
     next_race = min(upcoming_races, key=lambda r: to_unix(r['date'], r['time'])) if upcoming_races else None
 
-    # 2. BRUTE-FORCE SORT
+    # --- 2. BRUTE-FORCE CUSTOM SORT ---
     def custom_sort(race):
         name = race['raceName'].lower()
         if "australia" in name: return 1
@@ -123,7 +134,7 @@ async def dashboard_manager():
         
     display_schedule = sorted(schedule_cache, key=custom_sort)
 
-    # 3. BUILD SEAMLESS CHUNKS
+    # --- 3. BUILD SEAMLESS CHUNKS ---
     calendar_chunks = []
     current_chunk = f"# F1 2026 Calendar\n\n{PRE_SEASON}"
     
@@ -157,7 +168,7 @@ async def dashboard_manager():
         
     if current_chunk: calendar_chunks.append(current_chunk)
 
-    # 4. UPDATE MESSAGES (With safe .strip() checks)
+    # --- 4. UPDATE MESSAGES (With safe .strip() to avoid spamming edits) ---
     for i, chunk_text in enumerate(calendar_chunks):
         if i < len(calendar_messages):
             if calendar_messages[i].content.strip() != chunk_text.strip():
@@ -166,7 +177,16 @@ async def dashboard_manager():
             msg = await channel.send(chunk_text)
             calendar_messages.append(msg)
 
-    # 5. MANAGE NEXT GP MESSAGE
+    # --- 4b. FIX THE "DOUBLE ABU DHABI" BUG (Cleanup extra remnant chunks) ---
+    while len(calendar_messages) > len(calendar_chunks):
+        extra_msg = calendar_messages.pop() # Remove the extra message from our tracking list
+        try:
+            await extra_msg.delete()        # Physically delete the remnant message in Discord
+            print("Cleaned up an old leftover calendar chunk!")
+        except discord.NotFound:
+            pass
+
+    # --- 5. MANAGE NEXT GP MESSAGE ---
     if next_race:
         round_number = next_race['round']
         short_text = generate_short_msg(next_race, current_time)
@@ -199,6 +219,7 @@ async def on_ready():
     if channel:
         print("Scanning channel history for existing bot messages...")
         bot_msgs = []
+        # oldest_first=True ensures we grab Chunk 1, then Chunk 2, etc.
         async for msg in channel.history(limit=50, oldest_first=True):
             if msg.author == bot.user:
                 bot_msgs.append(msg)
@@ -214,7 +235,7 @@ async def on_ready():
                 print(f"-> Hooked into Calendar Chunk {len(calendar_messages)}.")
         
         dashboard_manager.start()
-        print("Live Dashboard is running safely!")
+        print("Live Dashboard is running smoothly!")
 
 
 # --- DUMMY WEB SERVER (RENDER KEEP-ALIVE) ---
@@ -225,7 +246,6 @@ def home():
     return "F1 Dashboard Bot is awake and running!"
 
 def run():
-    # Use the dynamic port Render provides, default to 8080 if running locally
     port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port)
 
