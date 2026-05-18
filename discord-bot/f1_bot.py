@@ -1,16 +1,32 @@
-import discord
+import os
+import sys
+import asyncio
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+BOT_DIR = Path(__file__).resolve().parent
+
+
+def _add_venv_site_packages():
+    venv_site_packages = BOT_DIR.parent / "venv" / "lib" / f"python{sys.version_info.major}.{sys.version_info.minor}" / "site-packages"
+    if venv_site_packages.exists() and str(venv_site_packages) not in sys.path:
+        sys.path.insert(0, str(venv_site_packages))
+
+
+try:
+    import discord
+except ModuleNotFoundError:
+    _add_venv_site_packages()
+    import discord
 from discord.ext import commands, tasks
 import requests
-from datetime import datetime, timezone
-import time
-import os
-import asyncio
 from dotenv import load_dotenv
 from flask import Flask
 from threading import Thread
 
 # Load secrets securely
-load_dotenv()
+load_dotenv(BOT_DIR / ".env")
 TOKEN = os.getenv('DISCORD_TOKEN')
 
 # --- CONFIGURATION ---
@@ -43,6 +59,8 @@ PRE_SEASON = (
 )
 
 intents = discord.Intents.default()
+# Allow reading message content so the bot can detect and match existing messages
+intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # --- GLOBAL STATE ---
@@ -85,6 +103,11 @@ def format_session(api_key, date_str, time_str, current_time, is_short_msg=False
     if is_short_msg:
         return f"{line}"           # No blockquote for the short message
     return f"> {line}"             # Add blockquote for the calendar
+
+def format_race_header(race_name, is_past=False):
+    flag = FLAG_EMOJIS.get(race_name, "🏁")
+    header = f"## {flag} {race_name}"
+    return f"~~{header}~~" if is_past else header
 
 def generate_short_msg(race, current_time):
     race_name = race['raceName']
@@ -150,8 +173,8 @@ async def dashboard_manager():
         
         for race in display_schedule:
             race_name = race['raceName']
-            flag = FLAG_EMOJIS.get(race_name, "🏁")
-            race_block = f"## {flag} {race_name}\n"
+            is_past_race = to_unix(race['date'], race['time']) < current_time
+            race_block = format_race_header(race_name, is_past_race) + "\n"
             
             if 'FirstPractice' in race: race_block += format_session("FirstPractice", race['FirstPractice']['date'], race['FirstPractice']['time'], current_time) + "\n"
             if 'Sprint' in race:

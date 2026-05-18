@@ -400,6 +400,9 @@ function render() {
             </div>
         </div>`;
     });
+    // Hide skeleton when grid is rendered
+    const gridSkeleton = document.getElementById("grid-skeleton");
+    if (gridSkeleton) gridSkeleton.style.display = "none";
     gridTabContent.innerHTML = gh;
     
     if (isFirstLoad) switchTab('grd');
@@ -471,6 +474,9 @@ function render() {
   const pastContainer = document.getElementById("past-content");
 
   if (nextRaceContainer) {
+    // Hide skeleton and show actual content
+    const skeleton = document.getElementById("next-race-skeleton");
+    if (skeleton) skeleton.style.display = "none";
     nextRaceContainer.innerHTML = htmlNext || '<div class="empty">No upcoming race found.</div>';
   }
 
@@ -513,14 +519,24 @@ function renderResults() {
       </div>
     </div>`;
   });
+  // Hide skeleton when results are rendered
+  const resultsSkeleton = document.getElementById("results-skeleton");
+  if (resultsSkeleton) resultsSkeleton.style.display = "none";
   document.getElementById("tc-res").innerHTML = h || '<div class="empty">No results yet.</div>';
 }
 
 function renderStandings() {
   if (!standings.length) {
+    // Hide skeleton even if no standings
+    const standingsSkeleton = document.getElementById("standings-skeleton");
+    if (standingsSkeleton) standingsSkeleton.style.display = "none";
     document.getElementById("tc-std").innerHTML = '<div class="empty">No standings yet.</div>';
     return;
   }
+  // Hide skeleton when standings are rendered
+  const standingsSkeleton = document.getElementById("standings-skeleton");
+  if (standingsSkeleton) standingsSkeleton.style.display = "none";
+  
   const top = standings.slice(0, 10);
   const max = parseFloat(top[0].points) || 1;
   document.getElementById("s-leader").textContent = top[0].Driver.code || top[0].Driver.familyName;
