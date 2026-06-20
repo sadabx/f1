@@ -2,50 +2,51 @@
 // FLAGS & TEAM COLORS
 // ============================================================
 const FLAGS = {
-  "Bahrain Grand Prix": "🇧🇭", 
-  "Saudi Arabian Grand Prix": "🇸🇦", 
+  "Bahrain Grand Prix": "🇧🇭",
+  "Saudi Arabian Grand Prix": "🇸🇦",
   "Australian Grand Prix": "🇦🇺",
-  "Japanese Grand Prix": "🇯🇵", 
-  "Chinese Grand Prix": "🇨🇳", 
+  "Japanese Grand Prix": "🇯🇵",
+  "Chinese Grand Prix": "🇨🇳",
   "Miami Grand Prix": "🇺🇸",
-  "Emilia Romagna Grand Prix": "🇮🇹", 
-  "Monaco Grand Prix": "🇲🇨", 
+  "Emilia Romagna Grand Prix": "🇮🇹",
+  "Monaco Grand Prix": "🇲🇨",
   "Canadian Grand Prix": "🇨🇦",
-  "Spanish Grand Prix": "🇪🇸", 
-  "Austrian Grand Prix": "🇦🇹", 
+  "Spanish Grand Prix": "🇪🇸",
+  "Austrian Grand Prix": "🇦🇹",
   "British Grand Prix": "🇬🇧",
-  "Hungarian Grand Prix": "🇭🇺", 
-  "Belgian Grand Prix": "🇧🇪", 
+  "Hungarian Grand Prix": "🇭🇺",
+  "Belgian Grand Prix": "🇧🇪",
   "Dutch Grand Prix": "🇳🇱",
-  "Italian Grand Prix": "🇮🇹", 
-  "Azerbaijan Grand Prix": "🇦🇿", 
+  "Italian Grand Prix": "🇮🇹",
+  "Azerbaijan Grand Prix": "🇦🇿",
   "Singapore Grand Prix": "🇸🇬",
-  "United States Grand Prix": "🇺🇸", 
-  "Mexico City Grand Prix": "🇲🇽", 
+  "United States Grand Prix": "🇺🇸",
+  "Mexico City Grand Prix": "🇲🇽",
   "São Paulo Grand Prix": "🇧🇷",
   "Brazilian Grand Prix": "🇧🇷",
-  "Las Vegas Grand Prix": "🇺🇸", 
-  "Qatar Grand Prix": "🇶🇦", 
+  "Las Vegas Grand Prix": "🇺🇸",
+  "Qatar Grand Prix": "🇶🇦",
   "Abu Dhabi Grand Prix": "🇦🇪",
   "Barcelona Grand Prix": "🇪🇸",
 };
 
 const TEAM_COLORS = {
-  red_bull: "#3671c6", 
-  "Red Bull": "#3671c6", 
-  Ferrari: "#e8002d", 
+  red_bull: "#3671c6",
+  "Red Bull": "#3671c6",
+  "Red Bull Racing": "#3671c6",
+  Ferrari: "#e8002d",
   Mercedes: "#27f4d2",
-  McLaren: "#ff8000", 
-  "Aston Martin": "#358c75", 
-  Alpine: "#ff87bc", 
+  McLaren: "#ff8000",
+  "Aston Martin": "#358c75",
+  Alpine: "#ff87bc",
   Williams: "#64c4ff",
-  "Haas F1 Team": "#b6babd", 
-  rb: "#6692ff", 
-  "Racing Bulls": "#6692ff", 
+  "Haas F1 Team": "#b6babd",
+  rb: "#6692ff",
+  "Racing Bulls": "#6692ff",
   "Kick Sauber": "#52e252",
-  cadillac: "#9aa0a6", 
-  "Cadillac F1 Team": "#9aa0a6", 
-  audi: "#b9b9b9", 
+  cadillac: "#9aa0a6",
+  "Cadillac F1 Team": "#9aa0a6",
+  audi: "#b9b9b9",
   Audi: "#b9b9b9",
 };
 
@@ -122,7 +123,7 @@ function cleanDriver(driver) {
 // GLOBAL STATE
 // ============================================================
 let showPast = false,
-  showRel = localStorage.getItem('showRel') === 'true', 
+  showRel = localStorage.getItem('showRel') === 'true',
   races = [],
   completed = [],
   standings = [],
@@ -154,7 +155,7 @@ function shortNamePlain(driver) {
 }
 
 function ts(d, t) {
-  try { return new Date(`${d}T${t || "00:00:00Z"}`).getTime(); } 
+  try { return new Date(`${d}T${t || "00:00:00Z"}`).getTime(); }
   catch { return Infinity; }
 }
 
@@ -162,7 +163,7 @@ function fmt(unix) {
   const absStr = new Date(unix).toLocaleString([], {
     weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
   });
-  
+
   const absHtml = `<span class="abs-time">${absStr}</span>`;
 
   if (showRel) {
@@ -170,10 +171,10 @@ function fmt(unix) {
     const m = Math.floor(a / 6e4), h = Math.floor(m / 60), d = Math.floor(h / 24), mo = Math.floor(d / 30);
     const s = mo > 0 ? mo + "mo" : d > 0 ? d + "d" : h > 0 ? h + "h" : m > 0 ? m + "m" : "now";
     const relStr = p ? s + " ago" : "in " + s;
-    
+
     return `${absHtml}<span class="rel-time">${relStr}</span>`;
   }
-  
+
   return absHtml;
 }
 
@@ -224,14 +225,14 @@ async function fetchCustomData() {
         return { ok: true, json: () => ({ MRData: { RaceTable: { Races: [] } } }) };
       })
     ]);
-    
+
     if (!r.ok) throw new Error(`Results HTTP ${r.status}`);
     if (!d.ok) throw new Error(`Standings HTTP ${d.status}`);
-    
+
     const [rd, dd, qd] = await Promise.all([
       r.json(), d.json(), q.ok ? q.json() : { MRData: { RaceTable: { Races: [] } } }
     ]);
-    
+
     const completed = rd.MRData?.RaceTable?.Races || [];
     completed.forEach(race => {
       race.raceName = normalizeRaceName(race.raceName);
@@ -250,7 +251,7 @@ async function fetchCustomData() {
         cleanDriver(std.Driver);
       }
     });
-    
+
     const qualis = qd.MRData?.RaceTable?.Races || [];
     qualis.forEach(race => {
       race.raceName = normalizeRaceName(race.raceName);
@@ -262,7 +263,7 @@ async function fetchCustomData() {
         });
       }
     });
-    
+
     return {
       completed: completed,
       standings: standings,
@@ -280,12 +281,12 @@ async function fetchCustomData() {
 // ============================================================
 function buildCalendarFromSessions(sessions) {
   const meetings = {};
-  
+
   sessions.forEach(session => {
     const key = session.meeting_key;
     const countryName = session.country_name || '';
     const circuitName = session.circuit_short_name || '';
-    
+
     if (!meetings[key]) {
       meetings[key] = {
         meetingName: session.meeting_name,
@@ -295,10 +296,10 @@ function buildCalendarFromSessions(sessions) {
         sessions: {}
       };
     }
-    
+
     const sessionName = session.session_name;
     const mappedName = SESSION_MAP[sessionName];
-    
+
     if (mappedName) {
       // Append 'Z' to ensure the time is parsed as UTC, since OpenF1 provides UTC times
       meetings[key].sessions[mappedName] = {
@@ -307,7 +308,7 @@ function buildCalendarFromSessions(sessions) {
       };
     }
   });
-  
+
   // Return meetings sorted chronologically by the earliest session
   return Object.values(meetings).sort((a, b) => {
     const aDate = a.sessions["Race"]?.date || Object.values(a.sessions)[0]?.date || "9999";
@@ -329,19 +330,19 @@ function mergeCalendars(openF1Meetings, jolpicaRaces) {
       ...meeting.sessions
     }));
   }
-  
+
   if (openF1Meetings.length === 0) {
     return jolpicaRaces;
   }
-  
+
   // Jolpica is the source of truth for raceName and round
   // Map OpenF1 sessions to Jolpica races by closest race date
   return jolpicaRaces.map(jolpicaRace => {
     const jTime = new Date(`${jolpicaRace.date}T${jolpicaRace.time || "00:00:00Z"}`).getTime();
-    
+
     let closestMeeting = null;
     let minDiff = Infinity;
-    
+
     openF1Meetings.forEach(meeting => {
       const raceSession = meeting.sessions["Race"];
       if (raceSession) {
@@ -353,7 +354,7 @@ function mergeCalendars(openF1Meetings, jolpicaRaces) {
         }
       }
     });
-    
+
     let merged = { ...jolpicaRace };
 
     // If the closest OpenF1 meeting is within a reasonable threshold (e.g. 5 days), merge its sessions
@@ -368,7 +369,7 @@ function mergeCalendars(openF1Meetings, jolpicaRaces) {
         merged.time = closestMeeting.sessions["Race"].time;
       }
     }
-    
+
     return merged;
   });
 }
@@ -422,11 +423,11 @@ function toggleSection(id) {
 function render() {
   const now = Date.now();
   const isMobile = window.innerWidth <= 800;
-  
+
   // Hide standard "Show past races" pill on mobile view
   const btnPast = document.getElementById("btn-past");
   if (btnPast) btnPast.style.display = isMobile ? "none" : "block";
-  
+
   const titleEl = document.getElementById("title-container");
   if (titleEl) titleEl.style.display = isMobile ? "none" : "block";
 
@@ -434,7 +435,7 @@ function render() {
   const next = upcoming.length
     ? upcoming.reduce((a, b) => ts(a.date, a.time) < ts(b.date, b.time) ? a : b)
     : null;
-    
+
   if (next) {
     document.getElementById("countdown").classList.add("show");
     document.getElementById("cd-name").textContent = (FLAGS[next.raceName] || "🏁") + " " + next.raceName;
@@ -448,11 +449,11 @@ function render() {
         clearInterval(cdInt);
         return;
       }
-      const dy = Math.floor(d / 864e5), 
-            h = Math.floor((d % 864e5) / 36e5), 
-            m = Math.floor((d % 36e5) / 6e4), 
-            s = Math.floor((d % 6e4) / 1e3);
-      document.getElementById("cd-timer").textContent = 
+      const dy = Math.floor(d / 864e5),
+        h = Math.floor((d % 864e5) / 36e5),
+        m = Math.floor((d % 36e5) / 6e4),
+        s = Math.floor((d % 6e4) / 1e3);
+      document.getElementById("cd-timer").textContent =
         `${dy}d ${String(h).padStart(2, "0")}h ${String(m).padStart(2, "0")}m ${String(s).padStart(2, "0")}s`;
     }, 1000);
   }
@@ -463,32 +464,32 @@ function render() {
   if (next && latestQuali && next.round === latestQuali.round) {
     gridTabBtn.style.display = 'block';
 
-    let gh = ``; 
+    let gh = ``;
     let poleTimeSec = null;
 
     latestQuali.QualifyingResults.forEach((res, index) => {
-        const team = res.Constructor.name;
-        const col = TEAM_COLORS[res.Constructor.constructorId] || TEAM_COLORS[team] || '#888';
-        
-        const timeStr = res.Q3 || res.Q2 || res.Q1;
-        let displayTime = "No Time";
+      const team = res.Constructor.name;
+      const col = TEAM_COLORS[res.Constructor.constructorId] || TEAM_COLORS[team] || '#888';
 
-        if (timeStr) {
-            const parts = timeStr.split(':');
-            let currentSec = Infinity;
-            if (parts.length === 2) currentSec = (parseInt(parts[0]) * 60) + parseFloat(parts[1]);
-            else currentSec = parseFloat(timeStr);
+      const timeStr = res.Q3 || res.Q2 || res.Q1;
+      let displayTime = "No Time";
 
-            if (index === 0) {
-                poleTimeSec = currentSec;
-                displayTime = timeStr;
-            } else if (poleTimeSec !== null && currentSec !== Infinity) {
-                const delta = currentSec - poleTimeSec;
-                displayTime = "+" + delta.toFixed(3);
-            } else displayTime = timeStr;
-        }
+      if (timeStr) {
+        const parts = timeStr.split(':');
+        let currentSec = Infinity;
+        if (parts.length === 2) currentSec = (parseInt(parts[0]) * 60) + parseFloat(parts[1]);
+        else currentSec = parseFloat(timeStr);
 
-        gh += `<div class="grid-row">
+        if (index === 0) {
+          poleTimeSec = currentSec;
+          displayTime = timeStr;
+        } else if (poleTimeSec !== null && currentSec !== Infinity) {
+          const delta = currentSec - poleTimeSec;
+          displayTime = "+" + delta.toFixed(3);
+        } else displayTime = timeStr;
+      }
+
+      gh += `<div class="grid-row">
             <span class="g-pos">${res.position}</span>
             <div class="g-bar" style="background: ${col}"></div>
             <div class="g-info">
@@ -504,7 +505,7 @@ function render() {
     const gridSkeleton = document.getElementById("grid-skeleton");
     if (gridSkeleton) gridSkeleton.style.display = "none";
     gridTabContent.innerHTML = gh;
-    
+
     if (isFirstLoad) switchTab('grd');
   } else {
     gridTabBtn.style.display = 'none';
@@ -514,22 +515,22 @@ function render() {
 
   document.getElementById("s-done").textContent = races.filter((r) => ts(r.date, r.time) < now).length;
   document.getElementById("s-left").textContent = races.filter((r) => ts(r.date, r.time) > now).length;
-  
+
   let htmlNext = "", htmlUpcoming = "", htmlPast = "";
-  
+
   races.forEach((r) => {
     const past = ts(r.date, r.time) < now;
     const isNext = next && r.raceName === next.raceName;
     const id = r.round;
-    
+
     if (collapsed[id] === undefined) collapsed[id] = !isNext;
-    
-    const bdg = past 
-      ? '<span class="badge b-done">Finished</span>' 
-      : isNext 
-        ? '<span class="badge b-next">Next race</span>' 
+
+    const bdg = past
+      ? '<span class="badge b-done">Finished</span>'
+      : isNext
+        ? '<span class="badge b-next">Next race</span>'
         : '<span class="badge b-soon">Upcoming</span>';
-    
+
     const sess = [];
     if (r.FirstPractice) sess.push({ n: "FP1", t: ts(r.FirstPractice.date, r.FirstPractice.time) });
     if (r.SprintQualifying) sess.push({ n: "Sprint Quali", t: ts(r.SprintQualifying.date, r.SprintQualifying.time) });
@@ -538,14 +539,14 @@ function render() {
     else if (r.ThirdPractice) sess.push({ n: "FP3", t: ts(r.ThirdPractice.date, r.ThirdPractice.time) });
     if (r.Qualifying) sess.push({ n: "Qualifying", t: ts(r.Qualifying.date, r.Qualifying.time) });
     sess.push({ n: "Race", t: ts(r.date, r.time) });
-    
-    const sHtml = sess.map((s) => 
+
+    const sHtml = sess.map((s) =>
       `<div class="srow ${s.t < now ? "past" : ""}">
         <span class="sname">${s.n}</span>
         <span class="stime">${fmt(s.t)}</span>
       </div>`
     ).join("");
-    
+
     const cardHTML = `<div class="card ${isNext ? "next" : ""}">
       <div class="card-head" onclick="toggleCard('${id}')">
         <div class="card-title">
@@ -636,7 +637,7 @@ function renderStandings() {
   // Hide skeleton when standings are rendered
   const standingsSkeleton = document.getElementById("standings-skeleton");
   if (standingsSkeleton) standingsSkeleton.style.display = "none";
-  
+
   const top = standings.slice(0, 10);
   const max = parseFloat(top[0].points) || 1;
   document.getElementById("s-leader").textContent = top[0].Driver.code || top[0].Driver.familyName;
@@ -676,18 +677,18 @@ async function fetchAll() {
       fetchCustomSchedule(),
       fetchCustomData()
     ]);
-    
+
     // Update global data from custom endpoints
     completed = customData.completed;
     standings = customData.standings;
     const qualis = customData.qualis;
     latestQuali = qualis.length > 0 ? qualis[qualis.length - 1] : null;
-    
+
     // Build race calendar
     if (openF1Sessions && openF1Sessions.length > 0) {
       const meetings = buildCalendarFromSessions(openF1Sessions);
       races = mergeCalendars(meetings, customSchedule);
-      
+
       // Update season year from data
       if (customSchedule.length > 0) {
         const customYear = customSchedule[0].season;
@@ -698,22 +699,22 @@ async function fetchAll() {
       races = customSchedule;
       console.log("⚠️ Using Custom API as fallback for race schedule");
     }
-    
+
     // Sort races by date
     races.sort((a, b) => {
       const timeA = ts(a.date, a.time);
       const timeB = ts(b.date, b.time);
       return timeA - timeB;
     });
-    
+
     // Update UI
     document.title = `F1 ${currentSeasonYear} Dashboard`;
     document.getElementById("year-display").textContent = currentSeasonYear;
-    
+
     render();
     renderResults();
     renderStandings();
-    
+
     console.log(`✅ Data loaded - ${races.length} races from ${openF1Sessions && openF1Sessions.length > 0 ? 'OpenF1 + Custom API' : 'Custom API fallback'}`);
   } catch (e) {
     console.error("❌ fetchAll failed:", e);
