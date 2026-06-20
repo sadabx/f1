@@ -1,346 +1,238 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes"
-    />
-    <title>F1 Live Dashboard | Formula 1 Race Schedule & Standings</title>
 
-    <!-- SEO Meta Tags -->
-    <meta
-      name="description"
-      content="A live Formula 1 season dashboard featuring countdowns, real-time race schedules, live standings, and qualifying results."
-    />
-    <meta
-      name="keywords"
-      content="F1, Formula 1, Live Dashboard, Race Calendar, Standings, Results, Motorsport"
-    />
-    <meta name="author" content="TRIONINE" />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+  <title>F1 Live Dashboard | Formula 1 Race Schedule & Standings</title>
 
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website" />
-    <meta
-      property="og:title"
-      content="F1 Live Dashboard | Formula 1 Race Schedule & Standings"
-    />
-    <meta
-      property="og:description"
-      content="A live Formula 1 season dashboard featuring countdowns, real-time race schedules, live standings, and qualifying results."
-    />
+  <!-- SEO Meta Tags -->
+  <meta name="description"
+    content="A live Formula 1 season dashboard featuring countdowns, real-time race schedules, live standings, and qualifying results." />
+  <meta name="keywords" content="F1, Formula 1, Live Dashboard, Race Calendar, Standings, Results, Motorsport" />
+  <meta name="author" content="TRIONINE" />
 
-    <!-- Twitter -->
-    <meta name="twitter:card" content="summary" />
-    <meta
-      name="twitter:title"
-      content="F1 Live Dashboard | Formula 1 Race Schedule & Standings"
-    />
-    <meta
-      name="twitter:description"
-      content="A live Formula 1 season dashboard featuring countdowns, real-time race schedules, live standings, and qualifying results."
-    />
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="F1 Live Dashboard | Formula 1 Race Schedule & Standings" />
+  <meta property="og:description"
+    content="A live Formula 1 season dashboard featuring countdowns, real-time race schedules, live standings, and qualifying results." />
 
-    <link rel="icon" type="image/png" href="f1car.png" />
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <header class="top-bar">
-      <h1>
-        <span
-          class="f1-badge"
-          onclick="if (window.innerWidth <= 650) toggleRel();"
-          title="Toggle Relative Time"
-          >F1</span
-        >
-        <span id="year-display">Live</span> Season Dashboard
-      </h1>
-      <nav class="controls" aria-label="Dashboard Controls">
-        <div
-          class="pill"
-          id="btn-past"
-          onclick="togglePast()"
-          role="button"
-          tabindex="0"
-        >
-          Show past races
-        </div>
-        <div
-          class="pill"
-          id="btn-rel"
-          onclick="toggleRel()"
-          role="button"
-          tabindex="0"
-        >
-          Relative time
-        </div>
-      </nav>
-    </header>
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="F1 Live Dashboard | Formula 1 Race Schedule & Standings" />
+  <meta name="twitter:description"
+    content="A live Formula 1 season dashboard featuring countdowns, real-time race schedules, live standings, and qualifying results." />
 
-    <section class="countdown" id="countdown" aria-label="Next Race Countdown">
-      <div>
-        <div class="cd-label">Next race</div>
-        <div class="cd-race" id="cd-name">—</div>
+  <link rel="icon" type="image/png" href="assets/f1car.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <header class="top-bar">
+    <h1>
+      <span class="f1-badge" onclick="if (window.innerWidth <= 650) toggleRel();" title="Toggle Relative Time">F1</span>
+      <span id="year-display">Live</span> Season Dashboard
+    </h1>
+    <nav class="controls" aria-label="Dashboard Controls">
+      <div class="pill" id="btn-past" onclick="togglePast()" role="button" tabindex="0">
+        Show past races
       </div>
-      <div style="text-align: right">
-        <div class="cd-label">Countdown</div>
-        <div class="cd-timer" id="cd-timer">—</div>
+      <div class="pill" id="btn-rel" onclick="toggleRel()" role="button" tabindex="0">
+        Relative time
       </div>
+    </nav>
+  </header>
+
+  <section class="countdown" id="countdown" aria-label="Next Race Countdown">
+    <div>
+      <div class="cd-label">Next race</div>
+      <div class="cd-race" id="cd-name">—</div>
+    </div>
+    <div style="text-align: right">
+      <div class="cd-label">Countdown</div>
+      <div class="cd-timer" id="cd-timer">—</div>
+    </div>
+  </section>
+
+  <main class="layout" id="main-layout">
+    <div id="title-container" class="desktop-only">
+      <div class="section-label">Race Calendar</div>
+    </div>
+
+    <div id="next-race-container">
+      <div id="next-race-content">
+        <div id="next-race-skeleton" class="skeleton-card">
+          <div class="card">
+            <div class="card-head">
+              <div class="card-title">
+                <span class="skeleton-inline" style="width: 30px; height: 24px"></span>
+                <div style="flex: 1">
+                  <div class="skeleton-inline" style="width: 60%; height: 20px; margin-bottom: 8px"></div>
+                  <div class="skeleton-inline" style="width: 45%; height: 14px"></div>
+                </div>
+              </div>
+            </div>
+            <div class="sessions open">
+              <div class="srow skeleton-row"></div>
+              <div class="srow skeleton-row"></div>
+              <div class="srow skeleton-row"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="upcoming-container">
+      <div class="mobile-header desktop-hidden" onclick="toggleSection('upcoming')">
+        Upcoming Races <span id="chev-upcoming" class="chev open">▼</span>
+      </div>
+      <div id="upcoming-content" class="section-list open"></div>
+    </div>
+
+    <div class="right-col">
+      <div class="panel">
+        <div class="tabs">
+          <div class="tab" id="t-grd" onclick="switchTab('grd')" style="display: none">
+            Grid
+          </div>
+          <div class="tab on" id="t-std" onclick="switchTab('std')">
+            Standings
+          </div>
+          <div class="tab" id="t-res" onclick="switchTab('res')">Results</div>
+        </div>
+
+        <div class="tc" id="tc-grd">
+          <div id="grid-skeleton" class="skeleton-loading">
+            <div class="grid-row" style="opacity: 0.6">
+              <span class="g-pos skeleton-inline" style="width: 30px"></span>
+              <div class="g-bar skeleton-inline" style="width: 40px"></div>
+              <div class="g-info">
+                <div>
+                  <div class="s-name skeleton-inline" style="width: 100px"></div>
+                  <div class="s-team skeleton-inline" style="width: 80px; margin-top: 4px"></div>
+                </div>
+                <div class="g-time skeleton-inline" style="width: 50px"></div>
+              </div>
+            </div>
+            <div class="grid-row" style="opacity: 0.5">
+              <span class="g-pos skeleton-inline" style="width: 30px"></span>
+              <div class="g-bar skeleton-inline" style="width: 40px"></div>
+              <div class="g-info">
+                <div>
+                  <div class="s-name skeleton-inline" style="width: 100px"></div>
+                  <div class="s-team skeleton-inline" style="width: 80px; margin-top: 4px"></div>
+                </div>
+                <div class="g-time skeleton-inline" style="width: 50px"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tc on" id="tc-std">
+          <div id="standings-skeleton" class="skeleton-loading">
+            <div class="stand-row" style="opacity: 0.7">
+              <span class="s-pos skeleton-inline" style="width: 30px"></span>
+              <div class="s-info">
+                <div class="s-top">
+                  <span class="s-name skeleton-inline" style="width: 80px"></span>
+                  <span class="s-pts skeleton-inline" style="width: 50px"></span>
+                </div>
+                <div class="s-bar">
+                  <div class="s-fill" style="width: 80%; background: var(--muted)"></div>
+                </div>
+                <div class="s-team skeleton-inline" style="width: 100px; margin-top: 4px"></div>
+              </div>
+            </div>
+            <div class="stand-row" style="opacity: 0.6">
+              <span class="s-pos skeleton-inline" style="width: 30px"></span>
+              <div class="s-info">
+                <div class="s-top">
+                  <span class="s-name skeleton-inline" style="width: 80px"></span>
+                  <span class="s-pts skeleton-inline" style="width: 50px"></span>
+                </div>
+                <div class="s-bar">
+                  <div class="s-fill" style="width: 60%; background: var(--muted)"></div>
+                </div>
+                <div class="s-team skeleton-inline" style="width: 100px; margin-top: 4px"></div>
+              </div>
+            </div>
+            <div class="stand-row" style="opacity: 0.5">
+              <span class="s-pos skeleton-inline" style="width: 30px"></span>
+              <div class="s-info">
+                <div class="s-top">
+                  <span class="s-name skeleton-inline" style="width: 80px"></span>
+                  <span class="s-pts skeleton-inline" style="width: 50px"></span>
+                </div>
+                <div class="s-bar">
+                  <div class="s-fill" style="width: 40%; background: var(--muted)"></div>
+                </div>
+                <div class="s-team skeleton-inline" style="width: 100px; margin-top: 4px"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tc" id="tc-res">
+          <div id="results-skeleton" class="skeleton-loading">
+            <div class="res-item">
+              <div class="res-race skeleton-inline" style="width: 150px; margin-bottom: 8px"></div>
+              <div class="podium">
+                <span class="pod skeleton-inline" style="width: 100px"></span>
+                <span class="pod skeleton-inline" style="width: 100px"></span>
+                <span class="pod skeleton-inline" style="width: 100px"></span>
+              </div>
+            </div>
+            <div class="res-item">
+              <div class="res-race skeleton-inline" style="width: 150px; margin-bottom: 8px"></div>
+              <div class="podium">
+                <span class="pod skeleton-inline" style="width: 100px"></span>
+                <span class="pod skeleton-inline" style="width: 100px"></span>
+                <span class="pod skeleton-inline" style="width: 100px"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">Season at a glance</div>
+        <div class="stat-grid">
+          <div class="stat">
+            <div class="stat-label">Races done</div>
+            <div class="stat-val" id="s-done">—</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Races left</div>
+            <div class="stat-val" id="s-left">—</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Leader</div>
+            <div class="stat-val sm" id="s-leader">—</div>
+            <div class="stat-sub" id="s-leader-pts"></div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Next up</div>
+            <div class="stat-val sm" id="s-next">—</div>
+            <div class="stat-sub" id="s-next-r"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <section id="past-container" aria-label="Past Races">
+      <div class="section-label desktop-only">Past Races</div>
+      <div class="mobile-header desktop-hidden" onclick="toggleSection('past')">
+        Past Races <span id="chev-past" class="chev">▼</span>
+      </div>
+      <div id="past-content" class="section-list"></div>
     </section>
+  </main>
 
-    <main class="layout" id="main-layout">
-      <div id="title-container" class="desktop-only">
-        <div class="section-label">Race Calendar</div>
-      </div>
+  <footer class="footer">
+    Developed by
+    <a href="https://trionine.xyz" target="_blank" rel="noopener noreferrer">TRIONINE</a>
+  </footer>
 
-      <div id="next-race-container">
-        <div id="next-race-content">
-          <div id="next-race-skeleton" class="skeleton-card">
-            <div class="card">
-              <div class="card-head">
-                <div class="card-title">
-                  <span
-                    class="skeleton-inline"
-                    style="width: 30px; height: 24px"
-                  ></span>
-                  <div style="flex: 1">
-                    <div
-                      class="skeleton-inline"
-                      style="width: 60%; height: 20px; margin-bottom: 8px"
-                    ></div>
-                    <div
-                      class="skeleton-inline"
-                      style="width: 45%; height: 14px"
-                    ></div>
-                  </div>
-                </div>
-              </div>
-              <div class="sessions open">
-                <div class="srow skeleton-row"></div>
-                <div class="srow skeleton-row"></div>
-                <div class="srow skeleton-row"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+  <script src="app.js"></script>
+</body>
 
-      <div id="upcoming-container">
-        <div
-          class="mobile-header desktop-hidden"
-          onclick="toggleSection('upcoming')"
-        >
-          Upcoming Races <span id="chev-upcoming" class="chev open">▼</span>
-        </div>
-        <div id="upcoming-content" class="section-list open"></div>
-      </div>
-
-      <div class="right-col">
-        <div class="panel">
-          <div class="tabs">
-            <div
-              class="tab"
-              id="t-grd"
-              onclick="switchTab('grd')"
-              style="display: none"
-            >
-              Grid
-            </div>
-            <div class="tab on" id="t-std" onclick="switchTab('std')">
-              Standings
-            </div>
-            <div class="tab" id="t-res" onclick="switchTab('res')">Results</div>
-          </div>
-
-          <div class="tc" id="tc-grd">
-            <div id="grid-skeleton" class="skeleton-loading">
-              <div class="grid-row" style="opacity: 0.6">
-                <span class="g-pos skeleton-inline" style="width: 30px"></span>
-                <div class="g-bar skeleton-inline" style="width: 40px"></div>
-                <div class="g-info">
-                  <div>
-                    <div
-                      class="s-name skeleton-inline"
-                      style="width: 100px"
-                    ></div>
-                    <div
-                      class="s-team skeleton-inline"
-                      style="width: 80px; margin-top: 4px"
-                    ></div>
-                  </div>
-                  <div class="g-time skeleton-inline" style="width: 50px"></div>
-                </div>
-              </div>
-              <div class="grid-row" style="opacity: 0.5">
-                <span class="g-pos skeleton-inline" style="width: 30px"></span>
-                <div class="g-bar skeleton-inline" style="width: 40px"></div>
-                <div class="g-info">
-                  <div>
-                    <div
-                      class="s-name skeleton-inline"
-                      style="width: 100px"
-                    ></div>
-                    <div
-                      class="s-team skeleton-inline"
-                      style="width: 80px; margin-top: 4px"
-                    ></div>
-                  </div>
-                  <div class="g-time skeleton-inline" style="width: 50px"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="tc on" id="tc-std">
-            <div id="standings-skeleton" class="skeleton-loading">
-              <div class="stand-row" style="opacity: 0.7">
-                <span class="s-pos skeleton-inline" style="width: 30px"></span>
-                <div class="s-info">
-                  <div class="s-top">
-                    <span
-                      class="s-name skeleton-inline"
-                      style="width: 80px"
-                    ></span>
-                    <span
-                      class="s-pts skeleton-inline"
-                      style="width: 50px"
-                    ></span>
-                  </div>
-                  <div class="s-bar">
-                    <div
-                      class="s-fill"
-                      style="width: 80%; background: var(--muted)"
-                    ></div>
-                  </div>
-                  <div
-                    class="s-team skeleton-inline"
-                    style="width: 100px; margin-top: 4px"
-                  ></div>
-                </div>
-              </div>
-              <div class="stand-row" style="opacity: 0.6">
-                <span class="s-pos skeleton-inline" style="width: 30px"></span>
-                <div class="s-info">
-                  <div class="s-top">
-                    <span
-                      class="s-name skeleton-inline"
-                      style="width: 80px"
-                    ></span>
-                    <span
-                      class="s-pts skeleton-inline"
-                      style="width: 50px"
-                    ></span>
-                  </div>
-                  <div class="s-bar">
-                    <div
-                      class="s-fill"
-                      style="width: 60%; background: var(--muted)"
-                    ></div>
-                  </div>
-                  <div
-                    class="s-team skeleton-inline"
-                    style="width: 100px; margin-top: 4px"
-                  ></div>
-                </div>
-              </div>
-              <div class="stand-row" style="opacity: 0.5">
-                <span class="s-pos skeleton-inline" style="width: 30px"></span>
-                <div class="s-info">
-                  <div class="s-top">
-                    <span
-                      class="s-name skeleton-inline"
-                      style="width: 80px"
-                    ></span>
-                    <span
-                      class="s-pts skeleton-inline"
-                      style="width: 50px"
-                    ></span>
-                  </div>
-                  <div class="s-bar">
-                    <div
-                      class="s-fill"
-                      style="width: 40%; background: var(--muted)"
-                    ></div>
-                  </div>
-                  <div
-                    class="s-team skeleton-inline"
-                    style="width: 100px; margin-top: 4px"
-                  ></div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="tc" id="tc-res">
-            <div id="results-skeleton" class="skeleton-loading">
-              <div class="res-item">
-                <div
-                  class="res-race skeleton-inline"
-                  style="width: 150px; margin-bottom: 8px"
-                ></div>
-                <div class="podium">
-                  <span class="pod skeleton-inline" style="width: 100px"></span>
-                  <span class="pod skeleton-inline" style="width: 100px"></span>
-                  <span class="pod skeleton-inline" style="width: 100px"></span>
-                </div>
-              </div>
-              <div class="res-item">
-                <div
-                  class="res-race skeleton-inline"
-                  style="width: 150px; margin-bottom: 8px"
-                ></div>
-                <div class="podium">
-                  <span class="pod skeleton-inline" style="width: 100px"></span>
-                  <span class="pod skeleton-inline" style="width: 100px"></span>
-                  <span class="pod skeleton-inline" style="width: 100px"></span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="panel">
-          <div class="panel-head">Season at a glance</div>
-          <div class="stat-grid">
-            <div class="stat">
-              <div class="stat-label">Races done</div>
-              <div class="stat-val" id="s-done">—</div>
-            </div>
-            <div class="stat">
-              <div class="stat-label">Races left</div>
-              <div class="stat-val" id="s-left">—</div>
-            </div>
-            <div class="stat">
-              <div class="stat-label">Leader</div>
-              <div class="stat-val sm" id="s-leader">—</div>
-              <div class="stat-sub" id="s-leader-pts"></div>
-            </div>
-            <div class="stat">
-              <div class="stat-label">Next up</div>
-              <div class="stat-val sm" id="s-next">—</div>
-              <div class="stat-sub" id="s-next-r"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <section id="past-container" aria-label="Past Races">
-        <div class="section-label desktop-only">Past Races</div>
-        <div
-          class="mobile-header desktop-hidden"
-          onclick="toggleSection('past')"
-        >
-          Past Races <span id="chev-past" class="chev">▼</span>
-        </div>
-        <div id="past-content" class="section-list"></div>
-      </section>
-    </main>
-
-    <footer class="footer">
-      Developed by
-      <a href="https://trionine.xyz" target="_blank" rel="noopener noreferrer"
-        >TRIONINE</a
-      >
-    </footer>
-
-    <script src="app.js"></script>
-  </body>
 </html>

@@ -60,6 +60,64 @@ const SESSION_MAP = {
   "Race": "Race"
 };
 
+// API Endpoints
+const CALENDAR_URL = "api/current.json";
+const STANDINGS_URL = "api/standings.json";
+const RESULTS_URL = "api/results.json";
+const QUALIFYING_URL = "api/qualifying.json";
+
+function normalizeRaceName(name) {
+  if (!name) return "";
+  let clean = name.replace(/grand prix/gi, "").replace(/gp/gi, "").trim();
+  const mapping = {
+    "Australian": "Australian Grand Prix",
+    "Chinese": "Chinese Grand Prix",
+    "Japanese": "Japanese Grand Prix",
+    "Miami": "Miami Grand Prix",
+    "Canadian": "Canadian Grand Prix",
+    "Monaco": "Monaco Grand Prix",
+    "Barcelona-Catalunya": "Spanish Grand Prix",
+    "Austrian": "Austrian Grand Prix",
+    "British": "British Grand Prix",
+    "Belgian": "Belgian Grand Prix",
+    "Hungarian": "Hungarian Grand Prix",
+    "Dutch": "Dutch Grand Prix",
+    "Italian": "Italian Grand Prix",
+    "Spanish": "Spanish Grand Prix",
+    "Azerbaijan": "Azerbaijan Grand Prix",
+    "Singapore": "Singapore Grand Prix",
+    "United States": "United States Grand Prix",
+    "Mexican": "Mexico City Grand Prix",
+    "Brazilian": "Brazilian Grand Prix",
+    "Las Vegas": "Las Vegas Grand Prix",
+    "Qatar": "Qatar Grand Prix",
+    "Abu Dhabi": "Abu Dhabi Grand Prix",
+    "Australia": "Australian Grand Prix",
+    "China": "Chinese Grand Prix",
+    "Japan": "Japanese Grand Prix",
+    "Canada": "Canadian Grand Prix",
+    "Barcelona": "Spanish Grand Prix",
+    "Barcelona Catalunya": "Spanish Grand Prix",
+    "Barcelona-catalunya": "Spanish Grand Prix"
+  };
+  return mapping[clean] || (clean + " Grand Prix");
+}
+
+function cleanDriver(driver) {
+  if (!driver) return driver;
+  let family = driver.familyName || "";
+  const code = driver.code;
+  if (code && family.includes(code)) {
+    const parts = family.split(code);
+    if (parts.length > 1 && parts[parts.length - 1].trim()) {
+      family = parts[parts.length - 1].trim();
+    }
+  }
+  driver.familyName = family;
+  return driver;
+}
+
+
 // ============================================================
 // GLOBAL STATE
 // ============================================================
@@ -135,45 +193,87 @@ async function fetchOpenF1Sessions(year) {
 }
 
 // ============================================================
-// API: Jolpica - Race Schedule
+// API: Custom - Race Schedule
 // ============================================================
-async function fetchJolpicaSchedule() {
+async function fetchCustomSchedule() {
   try {
-    const res = await fetch("https://api.jolpi.ca/ergast/f1/current.json");
-    if (!res.ok) throw new Error(`Jolpica HTTP ${res.status}`);
+    const res = await fetch(CALENDAR_URL);
+    if (!res.ok) throw new Error(`Custom API HTTP ${res.status}`);
     const data = await res.json();
-    return data.MRData.RaceTable.Races || [];
+    const races = data.MRData.RaceTable.Races || [];
+    races.forEach(r => {
+      r.raceName = normalizeRaceName(r.raceName);
+    });
+    return races;
   } catch (e) {
-    console.error("❌ Jolpica schedule fetch failed:", e);
+    console.error("❌ Custom schedule fetch failed:", e);
     return [];
   }
 }
 
 // ============================================================
-// API: Jolpica - Results, Standings, Qualifying
+// API: Custom - Results, Standings
 // ============================================================
-async function fetchJolpicaData() {
+async function fetchCustomData() {
   try {
     const [r, d, q] = await Promise.all([
-      fetch("https://api.jolpi.ca/ergast/f1/current/results.json?limit=1000"),
-      fetch("https://api.jolpi.ca/ergast/f1/current/driverStandings.json"),
-      fetch("https://api.jolpi.ca/ergast/f1/current/qualifying.json?limit=1000")
+      fetch(RESULTS_URL),
+      fetch(STANDINGS_URL),
+      fetch(QUALIFYING_URL).catch(e => {
+        console.warn("⚠️ Qualifying fetch failed, using empty fallback:", e);
+        return { ok: true, json: () => ({ MRData: { RaceTable: { Races: [] } } }) };
+      })
     ]);
+    
+    if (!r.ok) throw new Error(`Results HTTP ${r.status}`);
+    if (!d.ok) throw new Error(`Standings HTTP ${d.status}`);
     
     const [rd, dd, qd] = await Promise.all([
-      r.json(), d.json(), q.json()
+      r.json(), d.json(), q.ok ? q.json() : { MRData: { RaceTable: { Races: [] } } }
     ]);
     
+    const completed = rd.MRData?.RaceTable?.Races || [];
+    completed.forEach(race => {
+      race.raceName = normalizeRaceName(race.raceName);
+      if (race.Results) {
+        race.Results.forEach(res => {
+          if (res.Driver) {
+            cleanDriver(res.Driver);
+          }
+        });
+      }
+    });
+
+    const standings = dd.MRData?.StandingsTable?.StandingsLists?.[0]?.DriverStandings || [];
+    standings.forEach(std => {
+      if (std.Driver) {
+        cleanDriver(std.Driver);
+      }
+    });
+    
+    const qualis = qd.MRData?.RaceTable?.Races || [];
+    qualis.forEach(race => {
+      race.raceName = normalizeRaceName(race.raceName);
+      if (race.QualifyingResults) {
+        race.QualifyingResults.forEach(res => {
+          if (res.Driver) {
+            cleanDriver(res.Driver);
+          }
+        });
+      }
+    });
+    
     return {
-      completed: rd.MRData?.RaceTable?.Races || [],
-      standings: dd.MRData?.StandingsTable?.StandingsLists?.[0]?.DriverStandings || [],
-      qualis: qd.MRData?.RaceTable?.Races || []
+      completed: completed,
+      standings: standings,
+      qualis: qualis
     };
   } catch (e) {
-    console.error("❌ Jolpica data fetch failed:", e);
+    console.error("❌ Custom data fetch failed:", e);
     return { completed: [], standings: [], qualis: [] };
   }
 }
+
 
 // ============================================================
 // BUILD RACE CALENDAR FROM OPENF1 SESSIONS
@@ -542,13 +642,14 @@ function renderStandings() {
   document.getElementById("s-leader").textContent = top[0].Driver.code || top[0].Driver.familyName;
   document.getElementById("s-leader-pts").textContent = top[0].points + " pts";
   let h = "";
-  top.forEach((d) => {
+  top.forEach((d, index) => {
+    const displayPos = index + 1;
     const pct = ((parseFloat(d.points) / max) * 100).toFixed(0);
     const constructor = d.Constructors?.[0] || {};
     const team = constructor.name || "";
     const col = TEAM_COLORS[constructor.constructorId] || TEAM_COLORS[team] || "#e10600";
     h += `<div class="stand-row">
-      <span class="s-pos">${d.position}</span>
+      <span class="s-pos">${displayPos}</span>
       <div class="s-info">
         <div class="s-top">
           <span class="s-name">${d.Driver.code || d.Driver.familyName}</span>
@@ -570,32 +671,32 @@ function renderStandings() {
 async function fetchAll() {
   try {
     // Fetch both APIs in parallel
-    const [openF1Sessions, jolpicaSchedule, jolpicaData] = await Promise.all([
+    const [openF1Sessions, customSchedule, customData] = await Promise.all([
       fetchOpenF1Sessions(currentSeasonYear),
-      fetchJolpicaSchedule(),
-      fetchJolpicaData()
+      fetchCustomSchedule(),
+      fetchCustomData()
     ]);
     
-    // Update global data from Jolpica
-    completed = jolpicaData.completed;
-    standings = jolpicaData.standings;
-    const qualis = jolpicaData.qualis;
+    // Update global data from custom endpoints
+    completed = customData.completed;
+    standings = customData.standings;
+    const qualis = customData.qualis;
     latestQuali = qualis.length > 0 ? qualis[qualis.length - 1] : null;
     
     // Build race calendar
     if (openF1Sessions && openF1Sessions.length > 0) {
       const meetings = buildCalendarFromSessions(openF1Sessions);
-      races = mergeCalendars(meetings, jolpicaSchedule);
+      races = mergeCalendars(meetings, customSchedule);
       
       // Update season year from data
-      if (jolpicaSchedule.length > 0) {
-        const jolpicaYear = jolpicaSchedule[0].season;
-        if (jolpicaYear) currentSeasonYear = jolpicaYear;
+      if (customSchedule.length > 0) {
+        const customYear = customSchedule[0].season;
+        if (customYear) currentSeasonYear = customYear;
       }
     } else {
-      // Fallback to Jolpica only
-      races = jolpicaSchedule;
-      console.log("⚠️ Using Jolpica as fallback for race schedule");
+      // Fallback to customSchedule only
+      races = customSchedule;
+      console.log("⚠️ Using Custom API as fallback for race schedule");
     }
     
     // Sort races by date
@@ -613,7 +714,7 @@ async function fetchAll() {
     renderResults();
     renderStandings();
     
-    console.log(`✅ Data loaded - ${races.length} races from ${openF1Sessions && openF1Sessions.length > 0 ? 'OpenF1 + Jolpica' : 'Jolpica fallback'}`);
+    console.log(`✅ Data loaded - ${races.length} races from ${openF1Sessions && openF1Sessions.length > 0 ? 'OpenF1 + Custom API' : 'Custom API fallback'}`);
   } catch (e) {
     console.error("❌ fetchAll failed:", e);
     document.getElementById("next-race-content").innerHTML = '<div class="err">Failed to load data. Check your connection and try refreshing.</div>';
