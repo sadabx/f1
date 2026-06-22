@@ -431,7 +431,7 @@ function render() {
   const titleEl = document.getElementById("title-container");
   if (titleEl) titleEl.style.display = isMobile ? "none" : "block";
 
-  const upcoming = races.filter((r) => ts(r.date, r.time) > now);
+  const upcoming = races.filter((r) => ts(r.date, r.time) + (120 * 60 * 1000) > now);
   const next = upcoming.length
     ? upcoming.reduce((a, b) => ts(a.date, a.time) < ts(b.date, b.time) ? a : b)
     : null;
@@ -445,8 +445,13 @@ function render() {
     cdInt = setInterval(() => {
       const d = ts(next.date, next.time) - Date.now();
       if (d < 0) {
-        document.getElementById("cd-timer").textContent = "Race day!";
-        clearInterval(cdInt);
+        const duration = 120 * 60 * 1000; // 2 hours
+        if (d > -duration) {
+          document.getElementById("cd-timer").innerHTML = '<a href="https://iptv.trionine.xyz/sports/f1-live" target="_blank" rel="noopener noreferrer">Live ↗</a>';
+        } else {
+          document.getElementById("cd-timer").textContent = "Finished";
+          clearInterval(cdInt);
+        }
         return;
       }
       const dy = Math.floor(d / 864e5),
@@ -513,41 +518,55 @@ function render() {
   }
   isFirstLoad = false;
 
-  document.getElementById("s-done").textContent = races.filter((r) => ts(r.date, r.time) < now).length;
-  document.getElementById("s-left").textContent = races.filter((r) => ts(r.date, r.time) > now).length;
+  document.getElementById("s-done").textContent = races.filter((r) => ts(r.date, r.time) + (120 * 60 * 1000) < now).length;
+  document.getElementById("s-left").textContent = races.filter((r) => ts(r.date, r.time) + (120 * 60 * 1000) > now).length;
 
   let htmlNext = "", htmlUpcoming = "", htmlPast = "";
 
   races.forEach((r) => {
-    const past = ts(r.date, r.time) < now;
+    const isLive = ts(r.date, r.time) <= now && ts(r.date, r.time) + (120 * 60 * 1000) > now;
+    const past = ts(r.date, r.time) + (120 * 60 * 1000) < now;
     const isNext = next && r.raceName === next.raceName;
     const id = r.round;
 
     if (collapsed[id] === undefined) collapsed[id] = !isNext;
 
-    const bdg = past
-      ? '<span class="badge b-done">Finished</span>'
-      : isNext
-        ? '<span class="badge b-next">Next race</span>'
-        : '<span class="badge b-soon">Upcoming</span>';
+    const bdg = isLive
+      ? '<span class="badge b-live">Live</span>'
+      : past
+        ? '<span class="badge b-done">Finished</span>'
+        : isNext
+          ? '<span class="badge b-next">Next race</span>'
+          : '<span class="badge b-soon">Upcoming</span>';
 
     const sess = [];
-    if (r.FirstPractice) sess.push({ n: "FP1", t: ts(r.FirstPractice.date, r.FirstPractice.time) });
-    if (r.SprintQualifying) sess.push({ n: "Sprint Quali", t: ts(r.SprintQualifying.date, r.SprintQualifying.time) });
-    else if (r.SecondPractice) sess.push({ n: "FP2", t: ts(r.SecondPractice.date, r.SecondPractice.time) });
-    if (r.Sprint) sess.push({ n: "Sprint", t: ts(r.Sprint.date, r.Sprint.time) });
-    else if (r.ThirdPractice) sess.push({ n: "FP3", t: ts(r.ThirdPractice.date, r.ThirdPractice.time) });
-    if (r.Qualifying) sess.push({ n: "Qualifying", t: ts(r.Qualifying.date, r.Qualifying.time) });
-    sess.push({ n: "Race", t: ts(r.date, r.time) });
+    if (r.FirstPractice) sess.push({ n: "FP1", t: ts(r.FirstPractice.date, r.FirstPractice.time), dur: 60 * 60 * 1000 });
+    if (r.SprintQualifying) sess.push({ n: "Sprint Quali", t: ts(r.SprintQualifying.date, r.SprintQualifying.time), dur: 60 * 60 * 1000 });
+    else if (r.SecondPractice) sess.push({ n: "FP2", t: ts(r.SecondPractice.date, r.SecondPractice.time), dur: 60 * 60 * 1000 });
+    if (r.Sprint) sess.push({ n: "Sprint", t: ts(r.Sprint.date, r.Sprint.time), dur: 60 * 60 * 1000 });
+    else if (r.ThirdPractice) sess.push({ n: "FP3", t: ts(r.ThirdPractice.date, r.ThirdPractice.time), dur: 60 * 60 * 1000 });
+    if (r.Qualifying) sess.push({ n: "Qualifying", t: ts(r.Qualifying.date, r.Qualifying.time), dur: 60 * 60 * 1000 });
+    sess.push({ n: "Race", t: ts(r.date, r.time), dur: 120 * 60 * 1000 });
 
-    const sHtml = sess.map((s) =>
-      `<div class="srow ${s.t < now ? "past" : ""}">
-        <span class="sname">${s.n}</span>
-        <span class="stime">${fmt(s.t)}</span>
-      </div>`
-    ).join("");
+    const sHtml = sess.map((s) => {
+      const isSessPast = s.t + s.dur < now;
+      const isSessLive = now >= s.t && now < s.t + s.dur;
 
-    const cardHTML = `<div class="card ${isNext ? "next" : ""}">
+      const srowClass = isSessLive ? "srow live" : isSessPast ? "srow past" : "srow";
+      const nameHtml = isSessLive
+        ? `<span class="sname" style="color: var(--f1red); font-weight: 600;">${s.n} <span class="live-dot">●</span></span>`
+        : `<span class="sname">${s.n}</span>`;
+      const timeHtml = isSessLive
+        ? `<span class="stime" style="color: var(--f1red); font-weight: 600;">${fmt(s.t)}</span>`
+        : `<span class="stime">${fmt(s.t)}</span>`;
+
+      return `<div class="${srowClass}">
+        ${nameHtml}
+        ${timeHtml}
+      </div>`;
+    }).join("");
+
+    const cardHTML = `<div class="card ${isNext ? "next" : ""} ${isLive ? "live" : ""}">
       <div class="card-head" onclick="toggleCard('${id}')">
         <div class="card-title">
           <span class="race-flag">${FLAGS[r.raceName] || "🏁"}</span>
