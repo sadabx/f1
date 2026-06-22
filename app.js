@@ -27,7 +27,7 @@ const FLAGS = {
   "Las Vegas Grand Prix": "🇺🇸",
   "Qatar Grand Prix": "🇶🇦",
   "Abu Dhabi Grand Prix": "🇦🇪",
-  "Barcelona Grand Prix": "🇪🇸",
+  "Barcelona-Catalunya Grand Prix": "🇪🇸",
 };
 
 const TEAM_COLORS = {
@@ -77,7 +77,7 @@ function normalizeRaceName(name) {
     "Miami": "Miami Grand Prix",
     "Canadian": "Canadian Grand Prix",
     "Monaco": "Monaco Grand Prix",
-    "Barcelona-Catalunya": "Spanish Grand Prix",
+    "Barcelona-Catalunya": "Barcelona-Catalunya Grand Prix",
     "Austrian": "Austrian Grand Prix",
     "British": "British Grand Prix",
     "Belgian": "Belgian Grand Prix",
@@ -97,9 +97,9 @@ function normalizeRaceName(name) {
     "China": "Chinese Grand Prix",
     "Japan": "Japanese Grand Prix",
     "Canada": "Canadian Grand Prix",
-    "Barcelona": "Spanish Grand Prix",
-    "Barcelona Catalunya": "Spanish Grand Prix",
-    "Barcelona-catalunya": "Spanish Grand Prix"
+    "Barcelona": "Barcelona-Catalunya Grand Prix",
+    "Barcelona Catalunya": "Barcelona-Catalunya Grand Prix",
+    "Barcelona-catalunya": "Barcelona-Catalunya Grand Prix"
   };
   return mapping[clean] || (clean + " Grand Prix");
 }

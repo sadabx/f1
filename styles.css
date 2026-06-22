@@ -520,6 +520,8 @@ h1 {
   display: none;
   max-height: 400px;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
 }
 
 .tc.on {
@@ -740,7 +742,7 @@ h1 {
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 
 ::-webkit-scrollbar-track {
@@ -749,27 +751,145 @@ h1 {
 
 ::-webkit-scrollbar-thumb {
   background: var(--border);
-  border-radius: 3px;
+  border-radius: 2px;
 }
 
-.footer {
-  text-align: center;
-  padding: 30px 20px 0px 20px;
-  margin-top: 40px;
+.site-footer {
+  background: #0e0e0e;
   border-top: 1px solid var(--border);
-  font-size: 14px;
+  padding: 40px 20px 28px;
+  margin-top: 48px;
+  position: relative;
+  font-size: 0.8rem;
+  color: var(--muted);
+  border-radius: var(--radius);
+}
+
+.site-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--f1red), transparent);
+  opacity: 0.8;
+}
+
+.footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 2fr 1.2fr 3fr;
+  gap: 40px;
+  align-items: start;
+}
+
+/* Brand column */
+.footer-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.footer-logo {
+  display: flex;
+  align-items: baseline;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.footer-logo .logo-tn {
+  color: var(--f1red);
+}
+
+.footer-logo .logo-tv {
+  color: var(--text);
+}
+
+.footer-tagline {
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.footer-dev {
+  font-size: 0.75rem;
   color: var(--muted);
 }
 
-.footer a {
+.footer-dev a {
   color: var(--text);
   text-decoration: none;
   font-weight: 600;
-  transition: color 0.2s ease;
+  transition: color 0.15s;
 }
 
-.footer a:hover {
+.footer-dev a:hover {
   color: var(--f1red);
+}
+
+/* Link columns */
+.footer-links,
+.footer-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.footer-col-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.footer-links a {
+  font-size: 0.82rem;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.15s;
+  width: fit-content;
+}
+
+.footer-links a:hover {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.footer-note {
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.footer-copy {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-family: monospace;
+  margin-top: 4px;
+}
+
+/* Footer mobile */
+@media (max-width: 768px) {
+  .footer-inner {
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+
+  .footer-brand {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 480px) {
+  .footer-inner {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
 }
 
 /* Loading state for API badges */
