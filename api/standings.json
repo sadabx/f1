@@ -19,20 +19,6 @@
               ]
             },
             {
-              "position": "2",
-              "points": "115",
-              "Driver": {
-                "givenName": "Lewis",
-                "familyName": "Hamilton",
-                "code": "HAM"
-              },
-              "Constructors": [
-                {
-                  "name": "Ferrari"
-                }
-              ]
-            },
-            {
               "position": "3",
               "points": "106",
               "Driver": {
@@ -47,30 +33,16 @@
               ]
             },
             {
-              "position": "4",
-              "points": "75",
+              "position": "2",
+              "points": "115",
               "Driver": {
-                "givenName": "Charles",
-                "familyName": "Leclerc",
-                "code": "LEC"
+                "givenName": "Lewis",
+                "familyName": "Hamilton",
+                "code": "HAM"
               },
               "Constructors": [
                 {
                   "name": "Ferrari"
-                }
-              ]
-            },
-            {
-              "position": "5",
-              "points": "73",
-              "Driver": {
-                "givenName": "Lando",
-                "familyName": "Norris",
-                "code": "NOR"
-              },
-              "Constructors": [
-                {
-                  "name": "McLaren"
                 }
               ]
             },
@@ -89,12 +61,54 @@
               ]
             },
             {
+              "position": "5",
+              "points": "73",
+              "Driver": {
+                "givenName": "Lando",
+                "familyName": "Norris",
+                "code": "NOR"
+              },
+              "Constructors": [
+                {
+                  "name": "McLaren"
+                }
+              ]
+            },
+            {
+              "position": "4",
+              "points": "75",
+              "Driver": {
+                "givenName": "Charles",
+                "familyName": "Leclerc",
+                "code": "LEC"
+              },
+              "Constructors": [
+                {
+                  "name": "Ferrari"
+                }
+              ]
+            },
+            {
               "position": "7",
               "points": "55",
               "Driver": {
                 "givenName": "Max",
                 "familyName": "Verstappen",
                 "code": "VER"
+              },
+              "Constructors": [
+                {
+                  "name": "Red Bull Racing"
+                }
+              ]
+            },
+            {
+              "position": "9",
+              "points": "34",
+              "Driver": {
+                "givenName": "Isack",
+                "familyName": "Hadjar",
+                "code": "HAD"
               },
               "Constructors": [
                 {
@@ -113,20 +127,6 @@
               "Constructors": [
                 {
                   "name": "Alpine"
-                }
-              ]
-            },
-            {
-              "position": "9",
-              "points": "34",
-              "Driver": {
-                "givenName": "Isack",
-                "familyName": "Hadjar",
-                "code": "HAD"
-              },
-              "Constructors": [
-                {
-                  "name": "Red Bull Racing"
                 }
               ]
             },
