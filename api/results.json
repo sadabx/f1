@@ -211,6 +211,36 @@
             }
           ],
           "round": "7"
+        },
+        {
+          "raceName": "Austria Grand Prix",
+          "Results": [
+            {
+              "position": "1",
+              "Driver": {
+                "givenName": "George",
+                "familyName": "Russell",
+                "code": "RUS"
+              }
+            },
+            {
+              "position": "2",
+              "Driver": {
+                "givenName": "Max",
+                "familyName": "Verstappen",
+                "code": "VER"
+              }
+            },
+            {
+              "position": "3",
+              "Driver": {
+                "givenName": "Kimi",
+                "familyName": "Antonelli",
+                "code": "ANT"
+              }
+            }
+          ],
+          "round": "8"
         }
       ]
     }
