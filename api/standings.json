@@ -20,7 +20,7 @@
             },
             {
               "position": "2",
-              "points": "136",
+              "points": "154",
               "Driver": {
                 "givenName": "George",
                 "familyName": "Russell",
@@ -34,7 +34,7 @@
             },
             {
               "position": "3",
-              "points": "132",
+              "points": "147",
               "Driver": {
                 "givenName": "Lewis",
                 "familyName": "Hamilton",
@@ -48,21 +48,7 @@
             },
             {
               "position": "4",
-              "points": "85",
-              "Driver": {
-                "givenName": "Lando",
-                "familyName": "Norris",
-                "code": "NOR"
-              },
-              "Constructors": [
-                {
-                  "name": "McLaren"
-                }
-              ]
-            },
-            {
-              "position": "5",
-              "points": "83",
+              "points": "108",
               "Driver": {
                 "givenName": "Charles",
                 "familyName": "Leclerc",
@@ -71,6 +57,20 @@
               "Constructors": [
                 {
                   "name": "Ferrari"
+                }
+              ]
+            },
+            {
+              "position": "5",
+              "points": "97",
+              "Driver": {
+                "givenName": "Lando",
+                "familyName": "Norris",
+                "code": "NOR"
+              },
+              "Constructors": [
+                {
+                  "name": "McLaren"
                 }
               ]
             },
@@ -104,7 +104,7 @@
             },
             {
               "position": "8",
-              "points": "42",
+              "points": "52",
               "Driver": {
                 "givenName": "Isack",
                 "familyName": "Hadjar",
@@ -118,7 +118,7 @@
             },
             {
               "position": "9",
-              "points": "41",
+              "points": "42",
               "Driver": {
                 "givenName": "Pierre",
                 "familyName": "Gasly",
@@ -132,7 +132,7 @@
             },
             {
               "position": "10",
-              "points": "31",
+              "points": "39",
               "Driver": {
                 "givenName": "Liam",
                 "familyName": "Lawson",
@@ -146,6 +146,20 @@
             },
             {
               "position": "11",
+              "points": "20",
+              "Driver": {
+                "givenName": "Arvid",
+                "familyName": "Lindblad",
+                "code": "LIN"
+              },
+              "Constructors": [
+                {
+                  "name": "Racing Bulls"
+                }
+              ]
+            },
+            {
+              "position": "12",
               "points": "18",
               "Driver": {
                 "givenName": "Oliver",
@@ -159,8 +173,8 @@
               ]
             },
             {
-              "position": "12",
-              "points": "16",
+              "position": "13",
+              "points": "18",
               "Driver": {
                 "givenName": "Franco",
                 "familyName": "Colapinto",
@@ -173,21 +187,21 @@
               ]
             },
             {
-              "position": "13",
-              "points": "14",
+              "position": "14",
+              "points": "6",
               "Driver": {
-                "givenName": "Arvid",
-                "familyName": "Lindblad",
-                "code": "LIN"
+                "givenName": "Gabriel",
+                "familyName": "Bortoleto",
+                "code": "BOR"
               },
               "Constructors": [
                 {
-                  "name": "Racing Bulls"
+                  "name": "Audi"
                 }
               ]
             },
             {
-              "position": "14",
+              "position": "15",
               "points": "6",
               "Driver": {
                 "givenName": "Carlos",
@@ -201,7 +215,7 @@
               ]
             },
             {
-              "position": "15",
+              "position": "16",
               "points": "5",
               "Driver": {
                 "givenName": "Alexander",
@@ -215,7 +229,7 @@
               ]
             },
             {
-              "position": "16",
+              "position": "17",
               "points": "3",
               "Driver": {
                 "givenName": "Esteban",
@@ -225,20 +239,6 @@
               "Constructors": [
                 {
                   "name": "Haas F1 Team"
-                }
-              ]
-            },
-            {
-              "position": "17",
-              "points": "2",
-              "Driver": {
-                "givenName": "Gabriel",
-                "familyName": "Bortoleto",
-                "code": "BOR"
-              },
-              "Constructors": [
-                {
-                  "name": "Audi"
                 }
               ]
             },

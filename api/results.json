@@ -241,6 +241,36 @@
             }
           ],
           "round": "8"
+        },
+        {
+          "raceName": "Great Britain Grand Prix",
+          "Results": [
+            {
+              "position": "1",
+              "Driver": {
+                "givenName": "Charles",
+                "familyName": "Leclerc",
+                "code": "LEC"
+              }
+            },
+            {
+              "position": "2",
+              "Driver": {
+                "givenName": "George",
+                "familyName": "Russell",
+                "code": "RUS"
+              }
+            },
+            {
+              "position": "3",
+              "Driver": {
+                "givenName": "Lewis",
+                "familyName": "Hamilton",
+                "code": "HAM"
+              }
+            }
+          ],
+          "round": "9"
         }
       ]
     }
