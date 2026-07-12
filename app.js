@@ -447,7 +447,7 @@ function render() {
       if (d < 0) {
         const duration = 120 * 60 * 1000; // 2 hours
         if (d > -duration) {
-          document.getElementById("cd-timer").innerHTML = '<a href="https://iptv.trionine.xyz/sports/f1-live" target="_blank" rel="noopener noreferrer">Live ↗</a>';
+          document.getElementById("cd-timer").innerHTML = '<a href="https://iptv.trionine.com/sports/f1-live" target="_blank" rel="noopener noreferrer">Live ↗</a>';
         } else {
           document.getElementById("cd-timer").textContent = "Finished";
           clearInterval(cdInt);

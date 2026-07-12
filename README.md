@@ -47,10 +47,10 @@ For local development, they can be accessed at:
 - **Qualifying Results:** `api/qualifying.json`
 
 For external projects or integrations, you can consume the live, CORS-enabled endpoints publicly:
-- **Event Calendar:** `https://f1.trionine.xyz/api/current.json`
-- **Race Results:** `https://f1.trionine.xyz/api/results.json`
-- **Championship Standings:** `https://f1.trionine.xyz/api/standings.json`
-- **Qualifying Results:** `https://f1.trionine.xyz/api/qualifying.json`
+- **Event Calendar:** `https://f1.trionine.com/api/current.json`
+- **Race Results:** `https://f1.trionine.com/api/results.json`
+- **Championship Standings:** `https://f1.trionine.com/api/standings.json`
+- **Qualifying Results:** `https://f1.trionine.com/api/qualifying.json`
 
 ---
 
