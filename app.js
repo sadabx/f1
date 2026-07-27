@@ -30,6 +30,46 @@ const FLAGS = {
   "Barcelona-Catalunya Grand Prix": "🇪🇸",
 };
 
+let countryFlags;
+
+function normalizeLookupText(value) {
+  return value
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLocaleLowerCase("en-US")
+    .replace(/[-–—]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getCountryFlags() {
+  if (countryFlags) return countryFlags;
+  countryFlags = new Map();
+
+  if (typeof Intl.DisplayNames !== "function") return countryFlags;
+
+  const displayNames = new Intl.DisplayNames(["en"], { type: "region" });
+  for (let first = 65; first <= 90; first++) {
+    for (let second = 65; second <= 90; second++) {
+      const code = String.fromCharCode(first, second);
+      const country = displayNames.of(code);
+      if (!country || country === code || country === "Unknown Region") continue;
+
+      const flag = [...code]
+        .map(letter => String.fromCodePoint(letter.charCodeAt(0) + 127397))
+        .join("");
+      countryFlags.set(normalizeLookupText(country), flag);
+    }
+  }
+
+  // Common race naming that differs from Intl's official region names.
+  countryFlags.set("usa", "🇺🇸");
+  countryFlags.set("us", "🇺🇸");
+  countryFlags.set("uk", "🇬🇧");
+  countryFlags.set("great britain", "🇬🇧");
+  return countryFlags;
+}
+
 const TEAM_COLORS = {
   red_bull: "#3671c6",
   "Red Bull": "#3671c6",
@@ -69,39 +109,73 @@ const QUALIFYING_URL = "api/qualifying.json";
 
 function normalizeRaceName(name) {
   if (!name) return "";
-  let clean = name.replace(/grand prix/gi, "").replace(/gp/gi, "").trim();
-  const mapping = {
-    "Australian": "Australian Grand Prix",
-    "Chinese": "Chinese Grand Prix",
-    "Japanese": "Japanese Grand Prix",
-    "Miami": "Miami Grand Prix",
-    "Canadian": "Canadian Grand Prix",
-    "Monaco": "Monaco Grand Prix",
-    "Barcelona-Catalunya": "Barcelona-Catalunya Grand Prix",
-    "Austrian": "Austrian Grand Prix",
-    "British": "British Grand Prix",
-    "Belgian": "Belgian Grand Prix",
-    "Hungarian": "Hungarian Grand Prix",
-    "Dutch": "Dutch Grand Prix",
-    "Italian": "Italian Grand Prix",
-    "Spanish": "Spanish Grand Prix",
-    "Azerbaijan": "Azerbaijan Grand Prix",
-    "Singapore": "Singapore Grand Prix",
-    "United States": "United States Grand Prix",
-    "Mexican": "Mexico City Grand Prix",
-    "Brazilian": "Brazilian Grand Prix",
-    "Las Vegas": "Las Vegas Grand Prix",
-    "Qatar": "Qatar Grand Prix",
-    "Abu Dhabi": "Abu Dhabi Grand Prix",
-    "Australia": "Australian Grand Prix",
-    "China": "Chinese Grand Prix",
-    "Japan": "Japanese Grand Prix",
-    "Canada": "Canadian Grand Prix",
-    "Barcelona": "Barcelona-Catalunya Grand Prix",
-    "Barcelona Catalunya": "Barcelona-Catalunya Grand Prix",
-    "Barcelona-catalunya": "Barcelona-Catalunya Grand Prix"
+  const clean = name
+    .replace(/\bgrand prix\b/gi, "")
+    .replace(/\bgp\b/gi, "")
+    .replace(/[-–—]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const key = clean.toLocaleLowerCase("en-US");
+  const aliases = {
+    "saudi arabia": "Saudi Arabian",
+    "saudi arabian": "Saudi Arabian",
+    "australia": "Australian",
+    "australian": "Australian",
+    "china": "Chinese",
+    "chinese": "Chinese",
+    "japan": "Japanese",
+    "japanese": "Japanese",
+    "canada": "Canadian",
+    "canadian": "Canadian",
+    "spain": "Spanish",
+    "spanish": "Spanish",
+    "barcelona": "Barcelona-Catalunya",
+    "barcelona catalunya": "Barcelona-Catalunya",
+    "austria": "Austrian",
+    "austrian": "Austrian",
+    "great britain": "British",
+    "britain": "British",
+    "british": "British",
+    "belgium": "Belgian",
+    "belgian": "Belgian",
+    "hungary": "Hungarian",
+    "hungarian": "Hungarian",
+    "netherlands": "Dutch",
+    "dutch": "Dutch",
+    "italy": "Italian",
+    "italian": "Italian",
+    "mexico": "Mexico City",
+    "mexican": "Mexico City",
+    "mexico city": "Mexico City",
+    "brazil": "Brazilian",
+    "brazilian": "Brazilian",
+    "sao paulo": "São Paulo",
+    "são paulo": "São Paulo",
+    "usa": "United States",
+    "us": "United States",
+    "united states": "United States"
   };
-  return mapping[clean] || (clean + " Grand Prix");
+  return `${aliases[key] || clean} Grand Prix`;
+}
+
+function getRaceFlag(name) {
+  const mappedFlag = FLAGS[normalizeRaceName(name)];
+  if (mappedFlag) return mappedFlag;
+
+  const flags = getCountryFlags();
+  const parentheticalCountries = [...String(name).matchAll(/\(([^)]+)\)/g)]
+    .map(match => match[1])
+    .reverse();
+  const raceCountry = String(name)
+    .replace(/\([^)]*\)/g, "")
+    .replace(/\bgrand prix\b|\bgp\b/gi, "");
+
+  for (const candidate of [...parentheticalCountries, raceCountry]) {
+    const flag = flags.get(normalizeLookupText(candidate));
+    if (flag) return flag;
+  }
+
+  return "🏁";
 }
 
 function cleanDriver(driver) {
@@ -438,7 +512,7 @@ function render() {
 
   if (next) {
     document.getElementById("countdown").classList.add("show");
-    document.getElementById("cd-name").textContent = (FLAGS[next.raceName] || "🏁") + " " + next.raceName;
+    document.getElementById("cd-name").textContent = getRaceFlag(next.raceName) + " " + next.raceName;
     document.getElementById("s-next").textContent = next.raceName.replace(" Grand Prix", " GP");
     document.getElementById("s-next-r").textContent = "Round " + next.round;
     clearInterval(cdInt);
@@ -569,7 +643,7 @@ function render() {
     const cardHTML = `<div class="card ${isNext ? "next" : ""} ${isLive ? "live" : ""}">
       <div class="card-head" onclick="toggleCard('${id}')">
         <div class="card-title">
-          <span class="race-flag">${FLAGS[r.raceName] || "🏁"}</span>
+          <span class="race-flag">${getRaceFlag(r.raceName)}</span>
           <div>
             <div class="race-name">${r.raceName}</div>
             <div class="race-sub">Round ${r.round} · ${r.Circuit?.circuitName || ""}</div>
@@ -631,7 +705,7 @@ function renderResults() {
     const [a, b, c] = r.Results;
     const n = (d) => d.Driver.code || d.Driver.familyName;
     h += `<div class="res-item">
-      <div class="res-race">${FLAGS[r.raceName] || "🏁"} ${r.raceName}</div>
+      <div class="res-race">${getRaceFlag(r.raceName)} ${r.raceName}</div>
       <div class="podium">
         <span class="pod pod1">🥇 ${n(a)}</span>
         <span class="pod pod2">🥈 ${n(b)}</span>
