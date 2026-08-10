@@ -27,7 +27,7 @@ jobs:
       run: pip install requests pandas lxml bs4 html5lib
 
     - name: Run API Fetcher
-      run: python update_api.py
+      run: python scripts/update_api.py
 
     - name: Commit and Push API Data
       run: |
