@@ -290,8 +290,7 @@
               "Q2": "",
               "Q3": ""
             }
-          ],
-          "round": "1"
+          ]
         },
         {
           "raceName": "China Grand Prix",
@@ -626,8 +625,7 @@
               "Q2": "",
               "Q3": ""
             }
-          ],
-          "round": "2"
+          ]
         },
         {
           "raceName": "Japan Grand Prix",
@@ -962,8 +960,7 @@
               "Q2": "",
               "Q3": ""
             }
-          ],
-          "round": "3"
+          ]
         },
         {
           "raceName": "Miami Grand Prix",
@@ -1283,8 +1280,7 @@
               "Q2": "",
               "Q3": ""
             }
-          ],
-          "round": "4"
+          ]
         },
         {
           "raceName": "Canada Grand Prix",
@@ -1619,8 +1615,7 @@
               "Q2": "",
               "Q3": ""
             }
-          ],
-          "round": "5"
+          ]
         },
         {
           "raceName": "Monaco Grand Prix",
@@ -1955,8 +1950,7 @@
               "Q2": "",
               "Q3": ""
             }
-          ],
-          "round": "6"
+          ]
         },
         {
           "raceName": "Barcelona Catalunya Grand Prix",
@@ -2291,8 +2285,7 @@
               "Q2": "",
               "Q3": ""
             }
-          ],
-          "round": "7"
+          ]
         },
         {
           "raceName": "Austria Grand Prix",
@@ -2627,8 +2620,7 @@
               "Q2": "",
               "Q3": ""
             }
-          ],
-          "round": "8"
+          ]
         },
         {
           "raceName": "Great Britain Grand Prix",
@@ -2963,8 +2955,7 @@
               "Q2": "",
               "Q3": ""
             }
-          ],
-          "round": "9"
+          ]
         },
         {
           "raceName": "Belgium Grand Prix",
@@ -3299,8 +3290,7 @@
               "Q2": "",
               "Q3": ""
             }
-          ],
-          "round": "10"
+          ]
         },
         {
           "raceName": "Hungary Grand Prix",
@@ -3635,8 +3625,7 @@
               "Q2": "",
               "Q3": ""
             }
-          ],
-          "round": "11"
+          ]
         }
       ]
     }
