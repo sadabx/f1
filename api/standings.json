@@ -6,7 +6,7 @@
           "DriverStandings": [
             {
               "position": "1",
-              "points": "219",
+              "points": "224",
               "Driver": {
                 "givenName": "Kimi",
                 "familyName": "Antonelli",
@@ -20,7 +20,7 @@
             },
             {
               "position": "2",
-              "points": "169",
+              "points": "171",
               "Driver": {
                 "givenName": "Lewis",
                 "familyName": "Hamilton",
@@ -34,7 +34,7 @@
             },
             {
               "position": "3",
-              "points": "160",
+              "points": "168",
               "Driver": {
                 "givenName": "George",
                 "familyName": "Russell",
@@ -48,7 +48,7 @@
             },
             {
               "position": "4",
-              "points": "138",
+              "points": "145",
               "Driver": {
                 "givenName": "Charles",
                 "familyName": "Leclerc",
@@ -62,7 +62,7 @@
             },
             {
               "position": "5",
-              "points": "128",
+              "points": "134",
               "Driver": {
                 "givenName": "Lando",
                 "familyName": "Norris",
@@ -76,7 +76,7 @@
             },
             {
               "position": "6",
-              "points": "109",
+              "points": "112",
               "Driver": {
                 "givenName": "Max",
                 "familyName": "Verstappen",
@@ -90,7 +90,7 @@
             },
             {
               "position": "7",
-              "points": "92",
+              "points": "96",
               "Driver": {
                 "givenName": "Oscar",
                 "familyName": "Piastri",
@@ -120,20 +120,6 @@
               "position": "9",
               "points": "43",
               "Driver": {
-                "givenName": "Liam",
-                "familyName": "Lawson",
-                "code": "LAW"
-              },
-              "Constructors": [
-                {
-                  "name": "Racing Bulls"
-                }
-              ]
-            },
-            {
-              "position": "10",
-              "points": "42",
-              "Driver": {
                 "givenName": "Pierre",
                 "familyName": "Gasly",
                 "code": "GAS"
@@ -141,6 +127,20 @@
               "Constructors": [
                 {
                   "name": "Alpine"
+                }
+              ]
+            },
+            {
+              "position": "10",
+              "points": "43",
+              "Driver": {
+                "givenName": "Liam",
+                "familyName": "Lawson",
+                "code": "LAW"
+              },
+              "Constructors": [
+                {
+                  "name": "Red Bull Racing"
                 }
               ]
             },
