@@ -29,8 +29,7 @@
                 "code": "LEC"
               }
             }
-          ],
-          "round": "1"
+          ]
         },
         {
           "raceName": "China Grand Prix",
@@ -59,8 +58,7 @@
                 "code": "HAM"
               }
             }
-          ],
-          "round": "2"
+          ]
         },
         {
           "raceName": "Japan Grand Prix",
@@ -89,8 +87,7 @@
                 "code": "LEC"
               }
             }
-          ],
-          "round": "3"
+          ]
         },
         {
           "raceName": "Miami Grand Prix",
@@ -119,8 +116,7 @@
                 "code": "PIA"
               }
             }
-          ],
-          "round": "4"
+          ]
         },
         {
           "raceName": "Canada Grand Prix",
@@ -149,8 +145,7 @@
                 "code": "VER"
               }
             }
-          ],
-          "round": "5"
+          ]
         },
         {
           "raceName": "Monaco Grand Prix",
@@ -179,8 +174,7 @@
                 "code": "GAS"
               }
             }
-          ],
-          "round": "6"
+          ]
         },
         {
           "raceName": "Barcelona Catalunya Grand Prix",
@@ -209,8 +203,7 @@
                 "code": "NOR"
               }
             }
-          ],
-          "round": "7"
+          ]
         },
         {
           "raceName": "Austria Grand Prix",
@@ -239,8 +232,7 @@
                 "code": "ANT"
               }
             }
-          ],
-          "round": "8"
+          ]
         },
         {
           "raceName": "Great Britain Grand Prix",
@@ -269,8 +261,7 @@
                 "code": "HAM"
               }
             }
-          ],
-          "round": "9"
+          ]
         },
         {
           "raceName": "Belgium Grand Prix",
@@ -299,8 +290,7 @@
                 "code": "VER"
               }
             }
-          ],
-          "round": "10"
+          ]
         },
         {
           "raceName": "Hungary Grand Prix",
@@ -329,8 +319,7 @@
                 "code": "ANT"
               }
             }
-          ],
-          "round": "11"
+          ]
         }
       ]
     }
