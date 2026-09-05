@@ -90,7 +90,7 @@
             },
             {
               "position": "7",
-              "points": "104",
+              "points": "106",
               "Driver": {
                 "givenName": "Oscar",
                 "familyName": "Piastri",
@@ -104,7 +104,7 @@
             },
             {
               "position": "8",
-              "points": "68",
+              "points": "71",
               "Driver": {
                 "givenName": "Isack",
                 "familyName": "Hadjar",
@@ -118,7 +118,7 @@
             },
             {
               "position": "9",
-              "points": "49",
+              "points": "51",
               "Driver": {
                 "givenName": "Liam",
                 "familyName": "Lawson",
@@ -126,13 +126,13 @@
               },
               "Constructors": [
                 {
-                  "name": "Racing Bulls"
+                  "name": "Red Bull Racing"
                 }
               ]
             },
             {
               "position": "10",
-              "points": "44",
+              "points": "35",
               "Driver": {
                 "givenName": "Pierre",
                 "familyName": "Gasly",
@@ -146,7 +146,7 @@
             },
             {
               "position": "11",
-              "points": "23",
+              "points": "25",
               "Driver": {
                 "givenName": "Arvid",
                 "familyName": "Lindblad",
