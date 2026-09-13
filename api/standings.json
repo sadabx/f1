@@ -6,7 +6,7 @@
           "DriverStandings": [
             {
               "position": "1",
-              "points": "267",
+              "points": "292",
               "Driver": {
                 "givenName": "Kimi",
                 "familyName": "Antonelli",
@@ -20,7 +20,7 @@
             },
             {
               "position": "2",
-              "points": "201",
+              "points": "211",
               "Driver": {
                 "givenName": "George",
                 "familyName": "Russell",
@@ -48,7 +48,7 @@
             },
             {
               "position": "4",
-              "points": "171",
+              "points": "186",
               "Driver": {
                 "givenName": "Lando",
                 "familyName": "Norris",
@@ -62,7 +62,7 @@
             },
             {
               "position": "5",
-              "points": "155",
+              "points": "167",
               "Driver": {
                 "givenName": "Charles",
                 "familyName": "Leclerc",
@@ -76,7 +76,7 @@
             },
             {
               "position": "6",
-              "points": "127",
+              "points": "145",
               "Driver": {
                 "givenName": "Max",
                 "familyName": "Verstappen",
@@ -90,7 +90,7 @@
             },
             {
               "position": "7",
-              "points": "116",
+              "points": "120",
               "Driver": {
                 "givenName": "Oscar",
                 "familyName": "Piastri",
@@ -118,7 +118,7 @@
             },
             {
               "position": "9",
-              "points": "51",
+              "points": "59",
               "Driver": {
                 "givenName": "Liam",
                 "familyName": "Lawson",
@@ -126,7 +126,7 @@
               },
               "Constructors": [
                 {
-                  "name": "Racing Bulls"
+                  "name": "Red Bull Racing"
                 }
               ]
             },
@@ -146,7 +146,7 @@
             },
             {
               "position": "11",
-              "points": "29",
+              "points": "31",
               "Driver": {
                 "givenName": "Arvid",
                 "familyName": "Lindblad",
@@ -160,7 +160,7 @@
             },
             {
               "position": "12",
-              "points": "21",
+              "points": "27",
               "Driver": {
                 "givenName": "Franco",
                 "familyName": "Colapinto",
@@ -202,7 +202,7 @@
             },
             {
               "position": "15",
-              "points": "6",
+              "points": "7",
               "Driver": {
                 "givenName": "Nico",
                 "familyName": "Hulkenberg",
