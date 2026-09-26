@@ -1,18 +1,27 @@
-# F1 Live Dashboard
+# F1 Live Dashboard & Browser Extension
 
-A Formula 1 season dashboard featuring countdowns, real-time race schedules, live standings, qualifying results, and session timing data. 
+A real-time Formula 1 season dashboard and companion browser extension featuring live countdowns, race schedules, driver standings, qualifying results, and pre-session audio alarms.
 
-The application utilizes a serverless, static-file architecture: a background Python scraping pipeline runs automatically via GitHub Actions, updates static JSON files under the `api/` directory, and serves them directly to a fast, clean HTML5/JS frontend dashboard.
+The project utilizes a serverless, static-file architecture: a background Python scraping pipeline runs automatically via GitHub Actions, updates static JSON files under the `api/` directory, and serves them directly to both the web dashboard ([f1.trionine.com](https://f1.trionine.com)) and the **F1 Dash** browser extension.
 
 ---
 
 ## Features
 
+### 🌐 Web Dashboard
 - **Automated Data Scraping:** Scrapes standings, results, and qualifying times directly from the official F1 website.
 - **Race Order Alignment:** Pulls master calendar data from F1Calendar.com to map and tag sessions with their correct round IDs.
 - **Static API Storage:** Generates structured JSON files to prevent server overhead and load the dashboard instantly.
-- **Grid Tab:** Renders qualifying grids (Q1, Q2, Q3) for completed and upcoming weekends.
+- **Grid Tab:** Renders qualifying grids (Q1, Q2, Q3) for completed and upcoming race weekends.
 - **Relative Time Toggle:** Converts all session timings to dynamic relative countdowns.
+
+### 🏎️ F1 Dash Browser Extension
+- **Live Toolbar Countdown:** Digital monospace countdown clock tracking the exact time until the next practice, qualifying, sprint, or Grand Prix.
+- **Pre-Session Audio Alarms:** Automatically plays the official F1 intro theme 5 minutes before green light (configurable from 5 to 30 mins).
+- **Session Selectors:** Customize alerts for specific sessions (FP, SQ, Sprint, Quali, Race).
+- **Local Timezone Conversion:** Converts all track session start times directly to your local timezone.
+- **Official Motorsport Typography:** Styled with the official Formula 1 vector logo, Titillium Web, and JetBrains Mono.
+- **Cross-Browser Support:** Manifest V3 compatible across Firefox, Chrome, Brave, and Edge.
 
 ---
 
@@ -30,12 +39,22 @@ f1/
 ├── assets/                   # Static icons and logos
 ├── css/
 │   └── styles.css            # Dark mode styling & responsive layout
+├── extension/                # F1 Dash browser extension (Manifest V3)
+│   ├── assets/               # Extension icons, audio theme & self-hosted webfonts
+│   ├── background.js         # Background alarms & audio playback engine
+│   ├── manifest.json         # Extension manifest (Firefox default)
+│   ├── manifest.chrome.json  # Chromium manifest (Service Worker + Offscreen)
+│   ├── offscreen.html / .js  # Offscreen audio host for Chromium service workers
+│   ├── package.sh            # Dual-build packaging script
+│   ├── popup.html            # Extension popup layout
+│   ├── popup.css             # Extension styling (Titillium Web & JetBrains Mono)
+│   └── popup.js              # Live countdown & session state engine
 ├── js/
 │   └── app.js                # Frontend UI rendering & countdown engine
 ├── scripts/
 │   └── update_api.py         # Scraping, normalization & generation script
 ├── index.html                # Main dashboard HTML structure
-└── CNAME                     # Custom domain configuration
+└── CNAME                     # Custom domain configuration (f1.trionine.com)
 ```
 
 ---
@@ -44,7 +63,7 @@ f1/
 
 The scraped API data is stored as static JSON files. 
 
-For local development, they can be accessed at:
+For local development:
 - **Event Calendar:** `api/current.json`
 - **Race Results:** `api/results.json`
 - **Championship Standings:** `api/standings.json`
@@ -60,15 +79,42 @@ For external projects or integrations, you can consume the live, CORS-enabled en
 
 ## Development & Usage
 
-### 1. Scraping Data Locally
-To run the scraper manually, ensure your python virtual environment is active or use its interpreter:
-```bash
-python scripts/update_api.py
-```
-
-### 2. Serving Dashboard
+### 1. Web Dashboard
 Start a local HTTP server in the repository root:
 ```bash
 python3 -m http.server 5000
 ```
 Navigate to `http://localhost:5000` in your web browser.
+
+### 2. Scraping Data Locally
+To run the scraper manually, ensure your python virtual environment is active:
+```bash
+python scripts/update_api.py
+```
+
+### 3. F1 Dash Browser Extension
+
+#### Packaging for Distribution:
+Run the automated packaging script inside `extension/`:
+```bash
+cd extension
+./package.sh
+```
+This generates:
+- `f1_alert.zip` / `f1_alert.xpi`: Ready for Mozilla Add-on Developer Hub.
+- `f1_alert_chrome.zip` / `dist_chrome/`: Ready for Chrome Web Store / Chromium.
+
+#### Testing in Firefox:
+1. Open Firefox and go to `about:debugging#/runtime/this-firefox`.
+2. Click **"Load Temporary Add-on..."** and choose `extension/manifest.json`.
+
+#### Testing in Chrome / Brave / Edge:
+1. Run `./package.sh` inside `extension/`.
+2. Open `chrome://extensions` and enable **Developer mode** (top right).
+3. Click **"Load unpacked"** and select the `extension/dist_chrome/` directory.
+
+---
+
+## License
+
+This project is unofficial and is not associated in any way with Formula 1 companies. F1, FORMULA 1, and related marks are trademarks of Formula One Licensing B.V.

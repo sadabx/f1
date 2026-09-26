@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>F1 Dash</title>
+  <link rel="preload" href="assets/fonts/TitilliumWeb-Bold.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/TitilliumWeb-Regular.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/JetBrainsMono-Bold.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/TitilliumWeb-BoldItalic.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <!-- ============================================================
+       MAIN DASHBOARD VIEW
+       ============================================================ -->
+  <div id="view-main" class="view-panel active">
+    <!-- Top Bar -->
+    <header class="top-bar">
+      <div class="brand">
+        <svg class="f1-official-logo" viewBox="0 0 120 30" aria-label="Formula 1 Logo">
+          <path d="M89.9999375,30 L119.999937,0 L101.943687,0 L71.9443125,30 L89.9999375,30 Z M85.6986875,13.065 L49.3818125,13.065 C38.3136875,13.065 36.3768125,13.651875 31.6361875,18.3925 C27.2024375,22.82625 20.0005625,30 20.0005625,30 L35.7324375,30 L39.4855625,26.246875 C41.9530625,23.779375 43.2255625,23.52375 48.4068125,23.52375 L75.2405625,23.52375 L85.6986875,13.065 Z M31.1518125,16.253125 C27.8774375,19.3425 20.7530625,26.263125 16.9130625,30 L-6.25e-05,30 C-6.25e-05,30 13.5524375,16.486875 21.0849375,9.0725 C28.8455625,1.685 32.7143125,0 46.9486875,0 L98.7643125,0 L87.5449375,11.21875 L48.0011875,11.21875 C37.9993125,11.21875 35.7518125,11.911875 31.1518125,16.253125 Z" fill="var(--f1red)"/>
+        </svg>
+        <span class="brand-dash">DASH</span>
+      </div>
+      
+      <div class="top-controls">
+        <!-- Compact Toggle Switch -->
+        <label class="toggle-switch" title="Toggle Alarms (Active / Off)">
+          <input type="checkbox" id="master-switch" checked>
+          <span class="slider"></span>
+        </label>
+
+        <!-- Settings Button (Gear SVG Icon) -->
+        <button class="icon-btn" id="btn-open-settings" title="Alarm & Audio Settings">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="main-body">
+      <!-- Next Race Hero Banner -->
+      <section class="hero-countdown" id="hero-card">
+        <!-- Horizontal Carousel Navigation Bar -->
+        <div class="round-nav-bar">
+          <button class="nav-arrow" id="btn-prev-round" title="Previous Grand Prix">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
+          
+          <div class="round-badge-wrap">
+            <span class="round-indicator" id="round-indicator">ROUND 16 OF 24</span>
+            <span class="next-pill-badge" id="badge-current-status">NEXT RACE</span>
+          </div>
+
+          <button class="nav-arrow" id="btn-next-round" title="Next Grand Prix">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Grand Prix Title Row -->
+        <div class="hero-top">
+          <div class="hero-race-info">
+            <div class="hero-title-row">
+              <span class="race-flag" id="hero-flag">🏁</span>
+              <div class="hero-text-wrap">
+                <h2 class="race-name" id="hero-race-name">Loading Schedule...</h2>
+                <div class="circuit-name" id="hero-circuit">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Monospace Digital Countdown -->
+        <div class="countdown-bar" id="countdown-grid">
+          <div class="cd-unit">
+            <span class="cd-val" id="cd-days">00</span>
+            <span class="cd-lbl">D</span>
+          </div>
+          <span class="cd-sep">:</span>
+          <div class="cd-unit">
+            <span class="cd-val" id="cd-hours">00</span>
+            <span class="cd-lbl">H</span>
+          </div>
+          <span class="cd-sep">:</span>
+          <div class="cd-unit">
+            <span class="cd-val" id="cd-mins">00</span>
+            <span class="cd-lbl">M</span>
+          </div>
+          <span class="cd-sep">:</span>
+          <div class="cd-unit">
+            <span class="cd-val" id="cd-secs">00</span>
+            <span class="cd-lbl">S</span>
+          </div>
+        </div>
+
+        <!-- Bottom Left Target Detail -->
+        <div class="hero-footer-row">
+          <div class="hero-time-info" id="hero-time-info">—</div>
+          <button class="return-next-btn" id="btn-return-next" style="display: none;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px;">
+              <polyline points="1 4 1 10 7 10"></polyline>
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+            </svg>
+            Next Race
+          </button>
+        </div>
+      </section>
+
+      <!-- Weekend Sessions Section -->
+      <section class="sessions-section">
+        <div class="section-bar">
+          <div class="section-title">
+            <span class="red-bar-icon"></span>
+            <span>RACE WEEKEND SESSIONS</span>
+          </div>
+        </div>
+
+        <div class="session-list" id="session-list">
+          <div class="loading-state">Loading weekend sessions...</div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bottom-footer">
+      <div class="footer-left">
+        <svg class="f1-official-logo-footer" viewBox="0 0 120 30" aria-label="Formula 1 Logo">
+          <path d="M89.9999375,30 L119.999937,0 L101.943687,0 L71.9443125,30 L89.9999375,30 Z M85.6986875,13.065 L49.3818125,13.065 C38.3136875,13.065 36.3768125,13.651875 31.6361875,18.3925 C27.2024375,22.82625 20.0005625,30 20.0005625,30 L35.7324375,30 L39.4855625,26.246875 C41.9530625,23.779375 43.2255625,23.52375 48.4068125,23.52375 L75.2405625,23.52375 L85.6986875,13.065 Z M31.1518125,16.253125 C27.8774375,19.3425 20.7530625,26.263125 16.9130625,30 L-6.25e-05,30 C-6.25e-05,30 13.5524375,16.486875 21.0849375,9.0725 C28.8455625,1.685 32.7143125,0 46.9486875,0 L98.7643125,0 L87.5449375,11.21875 L48.0011875,11.21875 C37.9993125,11.21875 35.7518125,11.911875 31.1518125,16.253125 Z" fill="var(--f1red)"/>
+        </svg><span class="footer-logo-dash">DASH</span>
+        <span class="footer-dot">•</span>
+        <span class="footer-by">by <a href="https://trionine.com" target="_blank">trionine</a></span>
+      </div>
+      <a href="https://f1.trionine.com" target="_blank" class="live-dash-btn">
+        Live Dashboard
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 2px;">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+          <polyline points="15 3 21 3 21 9"></polyline>
+          <line x1="10" y1="14" x2="21" y2="3"></line>
+        </svg>
+      </a>
+    </footer>
+  </div>
+
+  <!-- ============================================================
+       SETTINGS VIEW
+       ============================================================ -->
+  <div id="view-settings" class="view-panel">
+    <header class="top-bar">
+      <button class="back-btn" id="btn-close-settings" title="Back to Dashboard">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+        <span>Back</span>
+      </button>
+
+      <span class="settings-title">ALARM PREFERENCES</span>
+      <div style="width: 50px;"></div>
+    </header>
+
+    <main class="settings-body">
+      <!-- Setting 1: Lead Time -->
+      <div class="setting-card">
+        <div class="setting-header">
+          <span class="setting-title">PRE-SESSION ALERT TIME</span>
+          <span class="setting-hint">Plays F1 Intro Theme before green light</span>
+        </div>
+        <select id="lead-time-select" class="f1-select">
+          <option value="5" selected>5 minutes before green light</option>
+          <option value="10">10 minutes before green light</option>
+          <option value="15">15 minutes before green light</option>
+          <option value="30">30 minutes before green light</option>
+        </select>
+      </div>
+
+      <!-- Setting 2: Session Checkboxes -->
+      <div class="setting-card">
+        <div class="setting-header">
+          <span class="setting-title">SESSION NOTIFICATIONS</span>
+          <span class="setting-hint">Choose which session types trigger alarms</span>
+        </div>
+        <div class="sessions-toggle-grid">
+          <label class="custom-cb">
+            <input type="checkbox" id="cb-race" checked>
+            <span class="cb-checkmark"></span>
+            <span class="cb-label-text">Grand Prix Race</span>
+          </label>
+          <label class="custom-cb">
+            <input type="checkbox" id="cb-quali" checked>
+            <span class="cb-checkmark"></span>
+            <span class="cb-label-text">Qualifying</span>
+          </label>
+          <label class="custom-cb">
+            <input type="checkbox" id="cb-sq" checked>
+            <span class="cb-checkmark"></span>
+            <span class="cb-label-text">Sprint Shootout (SQ)</span>
+          </label>
+          <label class="custom-cb">
+            <input type="checkbox" id="cb-sprint" checked>
+            <span class="cb-checkmark"></span>
+            <span class="cb-label-text">Sprint Race</span>
+          </label>
+          <label class="custom-cb">
+            <input type="checkbox" id="cb-fp" checked>
+            <span class="cb-checkmark"></span>
+            <span class="cb-label-text">Practice (FP1, FP2, FP3)</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Setting 3: Audio Volume -->
+      <div class="setting-card">
+        <div class="volume-header">
+          <div>
+            <span class="setting-title">ALARM SOUND VOLUME</span>
+            <span class="setting-hint">Set playback loudness</span>
+          </div>
+          <span class="volume-badge" id="volume-val">85%</span>
+        </div>
+        <input type="range" id="volume-slider" min="0" max="100" value="85" class="f1-range">
+      </div>
+
+      <!-- Setting 4: Audio Test Buttons -->
+      <div class="setting-card">
+        <div class="setting-header">
+          <span class="setting-title">TEST ALARM & NOTIFICATION</span>
+          <span class="setting-hint">Preview the official F1 theme and desktop notification</span>
+        </div>
+        <div class="test-alarm-row">
+          <button id="btn-test-alarm" class="f1-btn f1-btn-primary">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+            </svg>
+            <span id="test-btn-text">Test Official Theme</span>
+          </button>
+          <button id="btn-stop-alarm" class="f1-btn f1-btn-secondary" style="display: none;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="5" y="5" width="14" height="14" rx="2"></rect>
+            </svg>
+            <span>Stop Sound</span>
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

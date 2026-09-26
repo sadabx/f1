@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "F1 Dash",
+  "version": "1.0.0",
+  "description": "Never miss lights out. Live F1 countdowns, weekend schedules in your local time, and pre-session theme music alerts.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "f1-dash@trionine.com",
+      "strict_min_version": "109.0",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
+    }
+  },
+  "icons": {
+    "16": "assets/icon16.png",
+    "48": "assets/icon48.png",
+    "128": "assets/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "assets/icon16.png",
+      "48": "assets/icon48.png",
+      "128": "assets/icon128.png"
+    },
+    "default_title": "F1 Dash"
+  },
+  "background": {
+    "scripts": [
+      "background.js"
+    ]
+  },
+  "permissions": [
+    "alarms",
+    "notifications",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://f1.trionine.com/*",
+    "https://api.openf1.org/*"
+  ]
+}

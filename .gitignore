@@ -3,3 +3,7 @@
 venv/
 scratch/
 graphify-out/
+# Extension build artifacts
+extension/*.zip
+extension/*.xpi
+extension/dist_chrome/
