@@ -61,7 +61,33 @@ h1 {
   gap: 12px;
 }
 
-/* Red F1 Badge / Secret Toggle Button */
+/* Official F1 Vector Logo (Header) */
+.f1-official-logo-header {
+  height: 22px;
+  width: auto;
+  display: block;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 8px rgba(225, 6, 0, 0.4));
+  transition: transform 0.15s ease, filter 0.15s ease;
+  user-select: none;
+}
+
+.f1-official-logo-header:hover {
+  filter: drop-shadow(0 0 12px rgba(225, 6, 0, 0.65));
+}
+
+@media (max-width: 650px) {
+  .f1-official-logo-header {
+    cursor: pointer;
+    height: 18px;
+  }
+
+  .f1-official-logo-header:active {
+    transform: scale(0.95);
+  }
+}
+
+/* Fallback badge */
 .f1-badge {
   background: var(--f1red);
   color: #fff;
@@ -72,16 +98,6 @@ h1 {
   letter-spacing: 1px;
   user-select: none;
   transition: transform 0.1s;
-}
-
-@media (max-width: 650px) {
-  .f1-badge {
-    cursor: pointer;
-  }
-
-  .f1-badge:active {
-    transform: scale(0.95);
-  }
 }
 
 /* Fixed Top Bar (No Wrapping Allowed) */
@@ -811,18 +827,26 @@ h1 {
 
 .footer-logo {
   display: flex;
-  align-items: baseline;
-  font-size: 1.2rem;
-  font-weight: 700;
-  letter-spacing: 0.01em;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
 }
 
-.footer-logo .logo-tn {
-  color: var(--f1red);
+.f1-official-logo-footer {
+  height: 14px;
+  width: auto;
+  display: block;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 6px rgba(225, 6, 0, 0.35));
 }
 
 .footer-logo .logo-tv {
   color: var(--text);
+  font-weight: 800;
+  font-style: italic;
+  font-size: 1.15rem;
+  letter-spacing: 0.05em;
+  line-height: 1;
 }
 
 .footer-tagline {
