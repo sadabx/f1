@@ -6,7 +6,7 @@
           "DriverStandings": [
             {
               "position": "1",
-              "points": "292",
+              "points": "302",
               "Driver": {
                 "givenName": "Kimi",
                 "familyName": "Antonelli",
@@ -20,7 +20,7 @@
             },
             {
               "position": "2",
-              "points": "211",
+              "points": "236",
               "Driver": {
                 "givenName": "George",
                 "familyName": "Russell",
@@ -34,7 +34,7 @@
             },
             {
               "position": "3",
-              "points": "191",
+              "points": "199",
               "Driver": {
                 "givenName": "Lewis",
                 "familyName": "Hamilton",
@@ -62,7 +62,7 @@
             },
             {
               "position": "5",
-              "points": "167",
+              "points": "179",
               "Driver": {
                 "givenName": "Charles",
                 "familyName": "Leclerc",
@@ -76,7 +76,7 @@
             },
             {
               "position": "6",
-              "points": "145",
+              "points": "163",
               "Driver": {
                 "givenName": "Max",
                 "familyName": "Verstappen",
@@ -104,7 +104,7 @@
             },
             {
               "position": "8",
-              "points": "71",
+              "points": "86",
               "Driver": {
                 "givenName": "Isack",
                 "familyName": "Hadjar",
@@ -146,7 +146,7 @@
             },
             {
               "position": "11",
-              "points": "31",
+              "points": "37",
               "Driver": {
                 "givenName": "Arvid",
                 "familyName": "Lindblad",
@@ -174,7 +174,7 @@
             },
             {
               "position": "13",
-              "points": "18",
+              "points": "20",
               "Driver": {
                 "givenName": "Oliver",
                 "familyName": "Bearman",
@@ -216,7 +216,21 @@
             },
             {
               "position": "16",
-              "points": "6",
+              "points": "7",
+              "Driver": {
+                "givenName": "Esteban",
+                "familyName": "Ocon",
+                "code": "OCO"
+              },
+              "Constructors": [
+                {
+                  "name": "Haas F1 Team"
+                }
+              ]
+            },
+            {
+              "position": "17",
+              "points": "7",
               "Driver": {
                 "givenName": "Carlos",
                 "familyName": "Sainz",
@@ -229,7 +243,7 @@
               ]
             },
             {
-              "position": "17",
+              "position": "18",
               "points": "5",
               "Driver": {
                 "givenName": "Alexander",
@@ -239,20 +253,6 @@
               "Constructors": [
                 {
                   "name": "Williams"
-                }
-              ]
-            },
-            {
-              "position": "18",
-              "points": "3",
-              "Driver": {
-                "givenName": "Esteban",
-                "familyName": "Ocon",
-                "code": "OCO"
-              },
-              "Constructors": [
-                {
-                  "name": "Haas F1 Team"
                 }
               ]
             },
