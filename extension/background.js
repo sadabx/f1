@@ -199,7 +199,9 @@ async function syncCalendarAndSchedule() {
   const alarmMap = {};
   let nextSession = null;
 
-  // Find upcoming sessions
+  // Find upcoming sessions (Only schedule within next 7 days to avoid browser 32-bit millisecond overflow)
+  const MAX_SCHEDULE_HORIZON_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
   for (const race of races) {
     const sessions = extractWeekendSessions(race);
     for (const sess of sessions) {
@@ -207,7 +209,8 @@ async function syncCalendarAndSchedule() {
         if (!nextSession) nextSession = sess;
 
         const isTypeEnabled = settings.sessions?.[sess.sessionType] ?? true;
-        if (settings.masterEnabled && isTypeEnabled) {
+        // Only schedule if within 7 days; background worker auto-syncs every 6 hours anyway
+        if (settings.masterEnabled && isTypeEnabled && sess.startTime <= (now + MAX_SCHEDULE_HORIZON_MS)) {
           const triggerTime = sess.startTime - leadMs;
           const alarmName = `f1_sess_${sess.id}_${sess.startTime}`;
 
@@ -250,6 +253,16 @@ api.alarms.onAlarm.addListener(async (alarm) => {
     const sessionTitle = sessInfo ? `${sessInfo.sessionName} (${sessInfo.sessionCode})` : 'F1 Session';
     const raceTitle = sessInfo ? sessInfo.raceName : 'Grand Prix';
     const leadMin = settings.leadMinutes || 5;
+
+    // Sanity check: Ensure the session is ACTUALLY starting soon (guards against 32-bit timer overflows or stale alarms)
+    if (sessInfo) {
+      const now = Date.now();
+      const diffToStart = sessInfo.startTime - now;
+      if (diffToStart > 20 * 60 * 1000 || diffToStart < -60 * 60 * 1000) {
+        console.warn(`[F1 Alert] Ignored phantom alarm trigger: ${sessInfo.raceName} ${sessInfo.sessionCode} is ${Math.round(diffToStart / 60000)}m away.`);
+        return;
+      }
+    }
 
     // Trigger Notification
     api.notifications.create(alarm.name, {

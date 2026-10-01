@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "F1 Dash",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Never miss lights out. Live F1 countdowns, weekend schedules in your local time, and pre-session theme music alerts.",
   "icons": {
     "16": "assets/icon16.png",
