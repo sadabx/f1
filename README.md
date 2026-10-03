@@ -16,6 +16,8 @@ The project utilizes a serverless, static-file architecture: a background Python
 - **Relative Time Toggle:** Converts all session timings to dynamic relative countdowns.
 
 ### 🏎️ F1 Dash Browser Extension
+> **Official Mozilla Add-on:** Available on the [Firefox Browser Add-ons Store](https://addons.mozilla.org/firefox/addon/f1-dash/).
+
 - **Live Toolbar Countdown:** Digital monospace countdown clock tracking the exact time until the next practice, qualifying, sprint, or Grand Prix.
 - **Pre-Session Audio Alarms:** Automatically plays the official F1 intro theme 5 minutes before green light (configurable from 5 to 30 mins).
 - **Session Selectors:** Customize alerts for specific sessions (FP, SQ, Sprint, Quali, Race).
