@@ -451,6 +451,36 @@
             }
           ],
           "round": "15"
+        },
+        {
+          "raceName": "Bahrain Grand Prix",
+          "Results": [
+            {
+              "position": "1",
+              "Driver": {
+                "givenName": "Max",
+                "familyName": "Verstappen",
+                "code": "VER"
+              }
+            },
+            {
+              "position": "2",
+              "Driver": {
+                "givenName": "Kimi",
+                "familyName": "Antonelli",
+                "code": "ANT"
+              }
+            },
+            {
+              "position": "3",
+              "Driver": {
+                "givenName": "Lewis",
+                "familyName": "Hamilton",
+                "code": "HAM"
+              }
+            }
+          ],
+          "round": "16"
         }
       ]
     }
