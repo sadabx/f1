@@ -1,6 +1,6 @@
 # F1 Live Dashboard & Extension
 
-A real-time Formula 1 dashboard and companion browser extension providing live countdowns, weekend schedules, standings, qualifying results, and pre-session alerts.
+Formula 1 real-time schedule web dashboard, companion browser extension, and free open F1 API providing live countdowns, weekend schedules, standings, qualifying results, and pre-session alerts.
 
 - **Live Dashboard:** [f1.trionine.com](https://f1.trionine.com)
 - **Firefox Add-on:** [addons.mozilla.org/firefox/addon/f1-dash](https://addons.mozilla.org/firefox/addon/f1-dash/)
