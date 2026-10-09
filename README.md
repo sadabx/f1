@@ -57,22 +57,14 @@ The project provides free, CORS-enabled static JSON endpoints updated automatica
 
 ---
 
-## Local Development
+## Building from Source
 
-### Running the Web Dashboard
-```bash
-python3 -m http.server 5000
-```
-Open `http://localhost:5000` in your browser.
-
-### Building the Browser Extension
+To package the extension archives:
 ```bash
 cd extension
 ./package.sh
 ```
-This builds both distribution packages:
-- `f1_alert.zip` (Firefox Manifest V3)
-- `f1_alert_chrome.zip` / `dist_chrome/` (Chromium Manifest V3)
+Outputs `f1_alert.zip` (Firefox MV3) and `f1_alert_chrome.zip` (Chromium MV3).
 
 ---
 
