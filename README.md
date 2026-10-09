@@ -33,7 +33,7 @@ Install directly from the official Mozilla Add-ons store:
 2. Click **Add to Firefox**.
 
 ### Brave / Chrome / Edge
-1. Download `f1-dash-chrome.zip` from the latest [GitHub Release](https://github.com/sadabx/f1/releases).
+1. Download `f1_dash_chrome.zip` from the latest [GitHub Release](https://github.com/sadabx/f1/releases).
 2. Extract the downloaded ZIP file to a folder.
 3. Open the extensions page in your browser:
    - **Brave:** `brave://extensions`
@@ -64,7 +64,7 @@ To package the extension archives:
 cd extension
 ./package.sh
 ```
-Outputs `f1_alert.zip` (Firefox MV3) and `f1_alert_chrome.zip` (Chromium MV3).
+Outputs `f1_dash.zip` (Firefox MV3) and `f1_dash_chrome.zip` (Chromium MV3).
 
 ---
 

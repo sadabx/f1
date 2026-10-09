@@ -52,5 +52,5 @@ Run the packaging script to generate production zip and xpi files:
 ./package.sh
 ```
 Outputs:
-- `f1_alert.zip` / `f1_alert.xpi`: Ready for Mozilla Add-on Developer Hub.
-- `f1_alert_chrome.zip` / `dist_chrome/`: Ready for Chrome Web Store.
+- `f1_dash.zip` / `f1_dash.xpi`: Ready for Mozilla Add-on Developer Hub.
+- `f1_dash_chrome.zip` / `dist_chrome/`: Ready for Chrome Web Store.
