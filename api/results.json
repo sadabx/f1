@@ -481,6 +481,36 @@
             }
           ],
           "round": "16"
+        },
+        {
+          "raceName": "Singapore Grand Prix",
+          "Results": [
+            {
+              "position": "1",
+              "Driver": {
+                "givenName": "Max",
+                "familyName": "Verstappen",
+                "code": "VER"
+              }
+            },
+            {
+              "position": "2",
+              "Driver": {
+                "givenName": "Charles",
+                "familyName": "Leclerc",
+                "code": "LEC"
+              }
+            },
+            {
+              "position": "3",
+              "Driver": {
+                "givenName": "Kimi",
+                "familyName": "Antonelli",
+                "code": "ANT"
+              }
+            }
+          ],
+          "round": "17"
         }
       ]
     }
