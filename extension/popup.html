@@ -8,32 +8,29 @@
   <link rel="preload" href="assets/fonts/TitilliumWeb-Regular.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/JetBrainsMono-Bold.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/TitilliumWeb-BoldItalic.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:ital,wght@0,400;0,600;0,700;0,900;1,700&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
   <!-- ============================================================
-       MAIN DASHBOARD VIEW
+       MAIN APP CONTAINER (420px x 600px)
        ============================================================ -->
   <div id="view-main" class="view-panel active">
-    <!-- Top Bar -->
+    <!-- Clean Fixed Top Bar -->
     <header class="top-bar">
       <div class="brand">
         <svg class="f1-official-logo" viewBox="0 0 120 30" aria-label="Formula 1 Logo">
           <path d="M89.9999375,30 L119.999937,0 L101.943687,0 L71.9443125,30 L89.9999375,30 Z M85.6986875,13.065 L49.3818125,13.065 C38.3136875,13.065 36.3768125,13.651875 31.6361875,18.3925 C27.2024375,22.82625 20.0005625,30 20.0005625,30 L35.7324375,30 L39.4855625,26.246875 C41.9530625,23.779375 43.2255625,23.52375 48.4068125,23.52375 L75.2405625,23.52375 L85.6986875,13.065 Z M31.1518125,16.253125 C27.8774375,19.3425 20.7530625,26.263125 16.9130625,30 L-6.25e-05,30 C-6.25e-05,30 13.5524375,16.486875 21.0849375,9.0725 C28.8455625,1.685 32.7143125,0 46.9486875,0 L98.7643125,0 L87.5449375,11.21875 L48.0011875,11.21875 C37.9993125,11.21875 35.7518125,11.911875 31.1518125,16.253125 Z" fill="var(--f1red)"/>
         </svg>
         <span class="brand-dash">DASH</span>
+        <span class="brand-by">by <a href="https://trionine.com" target="_blank">trionine</a></span>
       </div>
-      
-      <div class="top-controls">
-        <!-- Compact Toggle Switch -->
-        <label class="toggle-switch" title="Toggle Alarms (Active / Off)">
-          <input type="checkbox" id="master-switch" checked>
-          <span class="slider"></span>
-        </label>
 
-        <!-- Settings Button (Gear SVG Icon) -->
-        <button class="icon-btn" id="btn-open-settings" title="Alarm & Audio Settings">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <div class="top-controls">
+        <button class="icon-btn" id="btn-open-settings" title="Settings & Preferences">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
           </svg>
@@ -41,115 +38,212 @@
       </div>
     </header>
 
-    <main class="main-body">
-      <!-- Next Race Hero Banner -->
-      <section class="hero-countdown" id="hero-card">
-        <!-- Horizontal Carousel Navigation Bar -->
-        <div class="round-nav-bar">
-          <button class="nav-arrow" id="btn-prev-round" title="Previous Grand Prix">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="15 18 9 12 15 6"></polyline>
-            </svg>
-          </button>
-          
-          <div class="round-badge-wrap">
-            <span class="round-indicator" id="round-indicator">ROUND 16 OF 24</span>
-            <span class="next-pill-badge" id="badge-current-status">NEXT RACE</span>
+    <!-- Content Viewport (Tabs) -->
+    <div class="tab-viewport">
+      <!-- ========================================================
+           TAB 1: WEEKEND SCHEDULE & COUNTDOWN
+           ======================================================== -->
+      <section id="tab-weekend" class="tab-pane active">
+        <!-- Hero Countdown Card -->
+        <div class="hero-countdown">
+          <div class="hero-header-row">
+            <button class="carousel-nav-btn" id="btn-prev-round" title="Previous Round">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+
+            <div class="round-badge-group">
+              <span class="round-meta" id="hero-round-badge">ROUND 18 OF 23</span>
+              </div>
+
+            <button class="carousel-nav-btn" id="btn-next-round" title="Next Round">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
           </div>
 
-          <button class="nav-arrow" id="btn-next-round" title="Next Grand Prix">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="9 18 15 12 9 6"></polyline>
-            </svg>
-          </button>
-        </div>
-
-        <!-- Grand Prix Title Row -->
-        <div class="hero-top">
-          <div class="hero-race-info">
-            <div class="hero-title-row">
-              <span class="race-flag" id="hero-flag">🏁</span>
-              <div class="hero-text-wrap">
-                <h2 class="race-name" id="hero-race-name">Loading Schedule...</h2>
-                <div class="circuit-name" id="hero-circuit">—</div>
-              </div>
+          <div class="hero-main-details">
+            <span class="hero-flag" id="hero-flag">🏁</span>
+            <div class="hero-titles">
+              <h2 class="hero-race-name" id="hero-race-name">Formula 1 Grand Prix</h2>
+              <p class="hero-circuit" id="hero-circuit">Round Details • Circuit Name</p>
             </div>
           </div>
+
+          <!-- Digital Clock Numerals -->
+          <div class="countdown-grid">
+            <div class="cd-unit">
+              <span class="cd-val" id="cd-days">00</span>
+              <span class="cd-lbl">D</span>
+            </div>
+            <span class="cd-sep">:</span>
+            <div class="cd-unit">
+              <span class="cd-val" id="cd-hours">00</span>
+              <span class="cd-lbl">H</span>
+            </div>
+            <span class="cd-sep">:</span>
+            <div class="cd-unit">
+              <span class="cd-val" id="cd-mins">00</span>
+              <span class="cd-lbl">M</span>
+            </div>
+            <span class="cd-sep">:</span>
+            <div class="cd-unit">
+              <span class="cd-val" id="cd-secs">00</span>
+              <span class="cd-lbl">S</span>
+            </div>
+          </div>
+
+          <!-- Relative target label -->
+          <div class="hero-sub-footer">
+            <div class="hero-time-info" id="hero-time-info">Loading countdown...</div>
+            <button class="return-next-btn" id="btn-return-next" style="display: none;">
+              Return to Current Round
+            </button>
+          </div>
         </div>
 
-        <!-- Live Monospace Digital Countdown -->
-        <div class="countdown-bar" id="countdown-grid">
-          <div class="cd-unit">
-            <span class="cd-val" id="cd-days">00</span>
-            <span class="cd-lbl">D</span>
-          </div>
-          <span class="cd-sep">:</span>
-          <div class="cd-unit">
-            <span class="cd-val" id="cd-hours">00</span>
-            <span class="cd-lbl">H</span>
-          </div>
-          <span class="cd-sep">:</span>
-          <div class="cd-unit">
-            <span class="cd-val" id="cd-mins">00</span>
-            <span class="cd-lbl">M</span>
-          </div>
-          <span class="cd-sep">:</span>
-          <div class="cd-unit">
-            <span class="cd-val" id="cd-secs">00</span>
-            <span class="cd-lbl">S</span>
-          </div>
-        </div>
-
-        <!-- Bottom Left Target Detail -->
-        <div class="hero-footer-row">
-          <div class="hero-time-info" id="hero-time-info">—</div>
-          <button class="return-next-btn" id="btn-return-next" style="display: none;">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px;">
-              <polyline points="1 4 1 10 7 10"></polyline>
-              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
-            </svg>
-            Next Race
-          </button>
-        </div>
-      </section>
-
-      <!-- Weekend Sessions Section -->
-      <section class="sessions-section">
-        <div class="section-bar">
-          <div class="section-title">
+        <!-- Weekend Session Timetable -->
+        <div class="sessions-section">
+          <div class="section-bar">
             <span class="red-bar-icon"></span>
-            <span>RACE WEEKEND SESSIONS</span>
+            <span class="section-title">RACE WEEKEND SESSIONS</span>
+          </div>
+
+          <div class="session-list" id="session-list">
+            <div class="loading-state">Loading weekend sessions...</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           TAB 2: CHAMPIONSHIP STANDINGS (DRIVERS / CONSTRUCTORS)
+           ======================================================== -->
+      <section id="tab-standings" class="tab-pane">
+        <div class="segmented-control">
+          <button class="seg-btn active" id="btn-standings-drivers">Drivers</button>
+          <button class="seg-btn" id="btn-standings-teams">Constructors</button>
+        </div>
+
+        <div id="standings-container" class="standings-scroll">
+          <div class="loading-state">Loading championship standings...</div>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           TAB 3: RECENT RESULTS & PODIUMS
+           ======================================================== -->
+      <section id="tab-results" class="tab-pane">
+        <div class="results-header-card" id="results-hero-card">
+          <div class="results-gp-title" id="results-gp-name">Latest Grand Prix</div>
+          <div class="podium-showcase" id="results-podium-showcase">
+            <!-- Dynamic Podium P1, P2, P3 cards -->
           </div>
         </div>
 
-        <div class="session-list" id="session-list">
-          <div class="loading-state">Loading weekend sessions...</div>
+        <!-- Finished Races List (Clicking updates top showcase) -->
+        <div class="card-section">
+          <div class="section-bar">
+            <span class="red-bar-icon"></span>
+            <span class="section-title">2026 RACE FINISHES</span>
+          </div>
+          <div id="results-season-list" class="results-list">
+            <div class="loading-state">Loading completed races...</div>
+          </div>
         </div>
       </section>
-    </main>
 
-    <!-- Footer -->
-    <footer class="bottom-footer">
-      <div class="footer-left">
-        <svg class="f1-official-logo-footer" viewBox="0 0 120 30" aria-label="Formula 1 Logo">
-          <path d="M89.9999375,30 L119.999937,0 L101.943687,0 L71.9443125,30 L89.9999375,30 Z M85.6986875,13.065 L49.3818125,13.065 C38.3136875,13.065 36.3768125,13.651875 31.6361875,18.3925 C27.2024375,22.82625 20.0005625,30 20.0005625,30 L35.7324375,30 L39.4855625,26.246875 C41.9530625,23.779375 43.2255625,23.52375 48.4068125,23.52375 L75.2405625,23.52375 L85.6986875,13.065 Z M31.1518125,16.253125 C27.8774375,19.3425 20.7530625,26.263125 16.9130625,30 L-6.25e-05,30 C-6.25e-05,30 13.5524375,16.486875 21.0849375,9.0725 C28.8455625,1.685 32.7143125,0 46.9486875,0 L98.7643125,0 L87.5449375,11.21875 L48.0011875,11.21875 C37.9993125,11.21875 35.7518125,11.911875 31.1518125,16.253125 Z" fill="var(--f1red)"/>
-        </svg><span class="footer-logo-dash">DASH</span>
-        <span class="footer-dot">•</span>
-        <span class="footer-by">by <a href="https://trionine.com" target="_blank">trionine</a></span>
-      </div>
-      <a href="https://f1.trionine.com" target="_blank" class="live-dash-btn">
-        Live Dashboard
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 2px;">
-          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-          <polyline points="15 3 21 3 21 9"></polyline>
-          <line x1="10" y1="14" x2="21" y2="3"></line>
+      <!-- ========================================================
+           TAB 4: LIVE TELEMETRY & RACE CONTROL (OpenF1)
+           ======================================================== -->
+      <section id="tab-live" class="tab-pane">
+        <!-- Live Fastest Lap Banner -->
+        <div class="fastest-lap-banner" id="live-fastest-lap-banner" style="display: none;">
+          <div class="fl-left">
+            <span class="fl-chevron">▶▶</span>
+            <span class="fl-title">FASTEST LAP</span>
+          </div>
+          <div class="fl-right">
+            <span class="fl-time" id="live-fl-time">--:--.---</span>
+            <span class="fl-driver" id="live-fl-driver">---</span>
+          </div>
+        </div>
+
+        <!-- Live Leaderboard Widget with Nitrous-style Track Status -->
+        <div class="card-section">
+          <div class="section-bar" style="justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="red-bar-icon"></span>
+              <span class="section-title">LIVE TIMING TOWER</span>
+            </div>
+            <div class="nitrous-status-pill status-green" id="track-status-pill" title="Race Control Status">
+              <span class="nitrous-status-label" id="track-status-label">Clear</span>
+              <span class="nitrous-status-bar"></span>
+            </div>
+          </div>
+
+          <div class="timing-tower-header">
+            <span class="col-pos">POS</span>
+            <span class="col-driver">DRIVER</span>
+            <span class="col-gap">GAP</span>
+            <span class="col-tyre">TYRE</span>
+          </div>
+
+          <div class="timing-tower-list" id="timing-tower-list">
+            <div class="loading-state">Connecting to OpenF1 Live Stream...</div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ========================================================
+         FROSTED BOTTOM NAVIGATION BAR
+         ======================================================== -->
+    <nav class="bottom-nav-bar">
+      <button class="nav-tab-btn active" data-tab="tab-weekend">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+          <line x1="4" y1="22" x2="4" y2="15"></line>
         </svg>
-      </a>
-    </footer>
+        <span>Weekend</span>
+      </button>
+
+      <button class="nav-tab-btn" data-tab="tab-standings">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+          <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+          <path d="M4 22h16"></path>
+          <path d="M10 14.66V17c0 .55-.45 1-1 1H7c-.55 0-1-.45-1-1v-2.34"></path>
+          <path d="M18 14.66V17c0 .55-.45 1-1 1h-2c-.55 0-1-.45-1-1v-2.34"></path>
+          <path d="M14 2h-4c-.55 0-1 .45-1 1v7c0 2.21 1.79 4 4 4s4-1.79 4-4V3c0-.55-.45-1-1-1z"></path>
+        </svg>
+        <span>Standings</span>
+      </button>
+
+      <button class="nav-tab-btn" data-tab="tab-results">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <span>Results</span>
+      </button>
+
+      <button class="nav-tab-btn" data-tab="tab-live">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4.93 19.07a10 10 0 0 1 0-14.14"></path>
+          <path d="M7.76 16.24a6 6 0 0 1 0-8.48"></path>
+          <circle cx="12" cy="12" r="2"></circle>
+          <path d="M16.24 7.76a6 6 0 0 1 0 8.48"></path>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+        </svg>
+        <span>Live</span>
+      </button>
+    </nav>
   </div>
 
   <!-- ============================================================
-       SETTINGS VIEW
+       SETTINGS & PREFERENCES VIEW PANEL
        ============================================================ -->
   <div id="view-settings" class="view-panel">
     <header class="top-bar">
@@ -160,12 +254,26 @@
         <span>Back</span>
       </button>
 
-      <span class="settings-title">ALARM PREFERENCES</span>
+      <span class="settings-title">SETTINGS & ALARMS</span>
       <div style="width: 50px;"></div>
     </header>
 
     <main class="settings-body">
-      <!-- Setting 1: Lead Time -->
+      <!-- Master Switch (Moved to top of Settings) -->
+      <div class="setting-card master-card">
+        <div class="master-row">
+          <div>
+            <span class="setting-title">MASTER ALARM SYSTEM</span>
+            <span class="setting-hint">Enable or mute all pre-session audio and desktop alerts</span>
+          </div>
+          <label class="toggle-switch" title="Toggle Alarms (Active / Off)">
+            <input type="checkbox" id="master-switch" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Setting: Lead Time -->
       <div class="setting-card">
         <div class="setting-header">
           <span class="setting-title">PRE-SESSION ALERT TIME</span>
@@ -179,7 +287,7 @@
         </select>
       </div>
 
-      <!-- Setting 2: Session Checkboxes -->
+      <!-- Setting: Session Checkboxes -->
       <div class="setting-card">
         <div class="setting-header">
           <span class="setting-title">SESSION NOTIFICATIONS</span>
@@ -214,7 +322,7 @@
         </div>
       </div>
 
-      <!-- Setting 3: Audio Volume -->
+      <!-- Setting: Audio Volume -->
       <div class="setting-card">
         <div class="volume-header">
           <div>
@@ -226,7 +334,7 @@
         <input type="range" id="volume-slider" min="0" max="100" value="85" class="f1-range">
       </div>
 
-      <!-- Setting 4: Audio Test Buttons -->
+      <!-- Setting: Test Buttons -->
       <div class="setting-card">
         <div class="setting-header">
           <span class="setting-title">TEST ALARM & NOTIFICATION</span>
