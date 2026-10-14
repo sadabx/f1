@@ -8,9 +8,6 @@
   <link rel="preload" href="assets/fonts/TitilliumWeb-Regular.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/JetBrainsMono-Bold.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/TitilliumWeb-BoldItalic.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:ital,wght@0,400;0,600;0,700;0,900;1,700&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
@@ -18,17 +15,24 @@
        MAIN APP CONTAINER (420px x 600px)
        ============================================================ -->
   <div id="view-main" class="view-panel active">
-    <!-- Clean Fixed Top Bar -->
+    <!-- Race control header -->
     <header class="top-bar">
       <div class="brand">
-        <svg class="f1-official-logo" viewBox="0 0 120 30" aria-label="Formula 1 Logo">
-          <path d="M89.9999375,30 L119.999937,0 L101.943687,0 L71.9443125,30 L89.9999375,30 Z M85.6986875,13.065 L49.3818125,13.065 C38.3136875,13.065 36.3768125,13.651875 31.6361875,18.3925 C27.2024375,22.82625 20.0005625,30 20.0005625,30 L35.7324375,30 L39.4855625,26.246875 C41.9530625,23.779375 43.2255625,23.52375 48.4068125,23.52375 L75.2405625,23.52375 L85.6986875,13.065 Z M31.1518125,16.253125 C27.8774375,19.3425 20.7530625,26.263125 16.9130625,30 L-6.25e-05,30 C-6.25e-05,30 13.5524375,16.486875 21.0849375,9.0725 C28.8455625,1.685 32.7143125,0 46.9486875,0 L98.7643125,0 L87.5449375,11.21875 L48.0011875,11.21875 C37.9993125,11.21875 35.7518125,11.911875 31.1518125,16.253125 Z" fill="var(--f1red)"/>
-        </svg>
-        <span class="brand-dash">DASH</span>
-        <span class="brand-by">by <a href="https://trionine.com" target="_blank">trionine</a></span>
+        <a href="https://f1.trionine.com" target="_blank" rel="noopener noreferrer" class="brand-logo-link" title="Open F1 Dash (f1.trionine.com)">
+          <svg class="f1-official-logo" viewBox="0 0 120 30" aria-label="Formula 1 Logo">
+            <path d="M89.9999375,30 L119.999937,0 L101.943687,0 L71.9443125,30 L89.9999375,30 Z M85.6986875,13.065 L49.3818125,13.065 C38.3136875,13.065 36.3768125,13.651875 31.6361875,18.3925 C27.2024375,22.82625 20.0005625,30 20.0005625,30 L35.7324375,30 L39.4855625,26.246875 C41.9530625,23.779375 43.2255625,23.52375 48.4068125,23.52375 L75.2405625,23.52375 L85.6986875,13.065 Z M31.1518125,16.253125 C27.8774375,19.3425 20.7530625,26.263125 16.9130625,30 L-6.25e-05,30 C-6.25e-05,30 13.5524375,16.486875 21.0849375,9.0725 C28.8455625,1.685 32.7143125,0 46.9486875,0 L98.7643125,0 L87.5449375,11.21875 L48.0011875,11.21875 C37.9993125,11.21875 35.7518125,11.911875 31.1518125,16.253125 Z" fill="var(--f1red)"/>
+          </svg>
+        </a>
+        <div class="brand-lockup">
+          <a href="https://f1.trionine.com" target="_blank" rel="noopener noreferrer" class="brand-dash-link" title="Open F1 Dash (f1.trionine.com)">
+            <span class="brand-dash">DASH</span>
+          </a>
+          <span class="brand-subtitle">by <a href="https://trionine.com" target="_blank" rel="noopener noreferrer">trionine</a></span>
+        </div>
       </div>
 
       <div class="top-controls">
+        <span class="season-pill">2026</span>
         <button class="icon-btn" id="btn-open-settings" title="Settings & Preferences">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3"></circle>
@@ -102,6 +106,10 @@
               Return to Current Round
             </button>
           </div>
+
+          <div class="countdown-progress" id="countdown-progress" role="progressbar" aria-label="Time remaining until the next session" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100">
+            <span class="countdown-progress-fill" id="countdown-progress-fill"></span>
+          </div>
         </div>
 
         <!-- Weekend Session Timetable -->
@@ -158,18 +166,6 @@
            TAB 4: LIVE TELEMETRY & RACE CONTROL (OpenF1)
            ======================================================== -->
       <section id="tab-live" class="tab-pane">
-        <!-- Live Fastest Lap Banner -->
-        <div class="fastest-lap-banner" id="live-fastest-lap-banner" style="display: none;">
-          <div class="fl-left">
-            <span class="fl-chevron">▶▶</span>
-            <span class="fl-title">FASTEST LAP</span>
-          </div>
-          <div class="fl-right">
-            <span class="fl-time" id="live-fl-time">--:--.---</span>
-            <span class="fl-driver" id="live-fl-driver">---</span>
-          </div>
-        </div>
-
         <!-- Live Leaderboard Widget with Nitrous-style Track Status -->
         <div class="card-section">
           <div class="section-bar" style="justify-content: space-between;">
@@ -186,8 +182,9 @@
           <div class="timing-tower-header">
             <span class="col-pos">POS</span>
             <span class="col-driver">DRIVER</span>
-            <span class="col-gap">GAP</span>
-            <span class="col-tyre">TYRE</span>
+            <span class="col-lap">LAP TIME</span>
+            <span class="col-gap" id="col-gap-header" title="Click to toggle Interval / Leader Gap">INTERVAL</span>
+            <span class="col-tyre">TIRE</span>
           </div>
 
           <div class="timing-tower-list" id="timing-tower-list">
@@ -338,7 +335,7 @@
       <div class="setting-card">
         <div class="setting-header">
           <span class="setting-title">TEST ALARM & NOTIFICATION</span>
-          <span class="setting-hint">Preview the official F1 theme and desktop notification</span>
+          <span class="setting-hint">Preview the race alarm sound and desktop notification</span>
         </div>
         <div class="test-alarm-row">
           <button id="btn-test-alarm" class="f1-btn f1-btn-primary">
@@ -347,7 +344,7 @@
               <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
               <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
             </svg>
-            <span id="test-btn-text">Test Official Theme</span>
+            <span id="test-btn-text">Test Alarm</span>
           </button>
           <button id="btn-stop-alarm" class="f1-btn f1-btn-secondary" style="display: none;">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
