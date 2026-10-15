@@ -6,9 +6,19 @@ if (audio) {
 
 // Offscreen audio player for Manifest V3 background audio
 const audio = document.getElementById('f1-theme-audio');
+const radioAudio = document.getElementById('f1-radio-audio');
 let currentOscillators = [];
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.action === 'PLAY_RADIO') {
+    const volume = typeof msg.volume === 'number' ? msg.volume : 0.85;
+    playRadio(volume).then(() => sendResponse({ status: 'playing_radio' }))
+      .catch((err) => {
+        console.warn('Radio audio playback failed:', err);
+        sendResponse({ status: 'error', error: String(err) });
+      });
+    return true;
+  }
   if (msg.action === 'PLAY_ALARM') {
     const volume = typeof msg.volume === 'number' ? msg.volume : 0.8;
     playAlarm(volume).then(() => sendResponse({ status: 'playing' }))
@@ -85,4 +95,11 @@ function playWebAudioFanfare(volume = 0.8) {
   } catch (e) {
     console.error('Web Audio Synth failed:', e);
   }
+}
+
+async function playRadio(volume) {
+  if (!radioAudio) return;
+  radioAudio.volume = Math.max(0, Math.min(1, volume));
+  radioAudio.currentTime = 0;
+  await radioAudio.play();
 }

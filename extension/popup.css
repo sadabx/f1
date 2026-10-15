@@ -994,6 +994,91 @@ body {
   color: #fff;
 }
 
+/* Starting Grid Cards */
+.grid-row-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  gap: 10px;
+  min-height: 42px;
+  transition: background-color 0.12s ease, border-color 0.12s ease;
+}
+
+.grid-row-card:hover {
+  background: var(--surface-elevated);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.grid-row-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.grid-pos {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-muted);
+  width: 24px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.grid-pos.pos-pole {
+  color: #ffc83b;
+}
+
+.grid-team-bar {
+  width: 3.5px;
+  height: 18px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.grid-driver-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.grid-driver-name {
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.grid-team-name {
+  font-size: 10px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.grid-time-val {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.grid-time-val.time-pole {
+  color: #cf54ff; /* Authentic F1 broadcast purple for pole lap time */
+  font-weight: 800;
+}
+
 /* ============================================================
    LIVE TELEMETRY TAB (OpenF1 Banners & Timing Tower)
    ============================================================ */
@@ -1492,28 +1577,12 @@ body {
   transition: opacity 0.15s ease, filter 0.15s ease;
 }
 
-.brand-dash-link {
-  display: inline-block;
-  line-height: 0.78;
-  text-decoration: none;
-  color: inherit;
-  cursor: pointer;
-  transition: opacity 0.15s ease, filter 0.15s ease;
-}
-
-.brand-logo-link:hover,
-.brand-dash-link:hover {
+.brand-logo-link:hover {
   opacity: 0.88;
 }
 
-.brand-logo-link:hover .f1-official-logo,
-.brand-dash-link:hover .brand-dash {
+.brand-logo-link:hover .f1-official-logo {
   filter: drop-shadow(0 0 6px rgba(225, 6, 0, 0.45));
-}
-
-.brand:has(.brand-logo-link:hover) .brand-dash,
-.brand:has(.brand-dash-link:hover) .f1-official-logo {
-  opacity: 0.88;
 }
 
 .f1-official-logo {
@@ -2166,6 +2235,44 @@ body {
   font-size: 11px;
 }
 
+/* Live Session Progress Badge (Lap count / Remaining time) */
+.session-progress-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.session-progress-badge .progress-type {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  color: #8c8c9a;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.session-progress-badge .progress-val {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.4px;
+}
+
+.session-progress-badge.is-time .progress-type {
+  display: none;
+}
+
+.session-progress-badge.is-time .progress-val {
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+}
+
 .timing-tower-header,
 .timing-row {
   grid-template-columns: 28px minmax(58px, 1fr) 60px 68px 52px;
@@ -2209,15 +2316,18 @@ body {
   border-left: 3px solid var(--f1red);
 }
 
-.timing-row.has-fastest-lap {
-  border: 1px solid rgba(190, 69, 255, 0.9);
-  border-left: 3px solid #bf4dff;
-  background: linear-gradient(90deg, rgba(152, 41, 212, 0.34), rgba(61, 24, 82, 0.32));
-  box-shadow: inset 0 0 18px rgba(184, 56, 221, 0.12);
+.fastest-lap-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #c455f7;
+  margin-left: -1px;
+  flex-shrink: 0;
+  vertical-align: middle;
 }
 
-.timing-row.has-fastest-lap:hover {
-  background: linear-gradient(90deg, rgba(166, 45, 229, 0.44), rgba(70, 25, 94, 0.4));
+.fastest-lap-clock {
+  display: block;
 }
 
 .timing-last-lap {
@@ -2232,9 +2342,9 @@ body {
 }
 
 .timing-last-lap.is-fastest {
-  color: #f0c5ff;
+  color: #cf54ff;
   font-weight: 800;
-  text-shadow: 0 0 10px rgba(220, 112, 255, 0.48);
+  text-shadow: 0 0 8px rgba(207, 84, 255, 0.45);
 }
 
 .tyre-pill {
@@ -2488,4 +2598,345 @@ body {
   font-size: 10.5px;
   font-weight: 600;
   letter-spacing: -0.2px;
+}
+
+
+/* ============================================================
+   LIVE NAV TAB: RADAR BEACON RIPPLE ANIMATION
+   Center red dot pulses -> expands to inner wave -> outer wave
+   ============================================================ */
+/* Default state: 100% identical to the original icon (no red, no pulse) */
+.live-nav-icon {
+  overflow: visible;
+}
+
+/* During a LIVE session ONLY (.is-live): red center dot + radar ripple */
+.live-nav-icon.is-live .live-wave-center {
+  fill: #ff1801;
+  stroke: #ff1801;
+  transform-origin: 12px 12px;
+  animation: live-center-pulse 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.live-nav-icon.is-live .live-wave-inner {
+  transform-origin: 12px 12px;
+  animation: live-inner-ripple 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.live-nav-icon.is-live .live-wave-outer {
+  transform-origin: 12px 12px;
+  animation: live-outer-ripple 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes live-center-pulse {
+  0% {
+    transform: scale(0.92);
+    fill: #e10600;
+    stroke: #e10600;
+    filter: drop-shadow(0 0 1px rgba(225, 6, 0, 0.4));
+  }
+  15% {
+    transform: scale(1.35);
+    fill: #ff2a14;
+    stroke: #ff2a14;
+    filter: drop-shadow(0 0 5px rgba(255, 42, 20, 0.95));
+  }
+  32% {
+    transform: scale(1);
+    fill: #e10600;
+    stroke: #e10600;
+    filter: drop-shadow(0 0 2px rgba(225, 6, 0, 0.5));
+  }
+  100% {
+    transform: scale(0.92);
+    fill: #e10600;
+    stroke: #e10600;
+    filter: drop-shadow(0 0 1px rgba(225, 6, 0, 0.4));
+  }
+}
+
+@keyframes live-inner-ripple {
+  0%, 12% {
+    opacity: 0.3;
+    stroke: currentColor;
+    filter: none;
+  }
+  28% {
+    opacity: 1;
+    stroke: #ff331f;
+    filter: drop-shadow(0 0 4px rgba(255, 51, 31, 0.8));
+  }
+  48% {
+    opacity: 0.35;
+    stroke: currentColor;
+    filter: none;
+  }
+  100% {
+    opacity: 0.3;
+    stroke: currentColor;
+    filter: none;
+  }
+}
+
+@keyframes live-outer-ripple {
+  0%, 25% {
+    opacity: 0.2;
+    stroke: currentColor;
+    filter: none;
+  }
+  42% {
+    opacity: 1;
+    stroke: #ff5240;
+    filter: drop-shadow(0 0 4px rgba(255, 82, 64, 0.75));
+  }
+  65% {
+    opacity: 0.25;
+    stroke: currentColor;
+    filter: none;
+  }
+  100% {
+    opacity: 0.2;
+    stroke: currentColor;
+    filter: none;
+  }
+}
+
+/* ============================================================
+   NOTIFICATIONS POPOVER & SETTINGS EXTENSIONS
+   ============================================================ */
+.notif-bell-btn {
+  position: relative;
+}
+
+.notification-badge-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 7px;
+  height: 7px;
+  background: var(--f1red);
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(225, 6, 0, 0.9);
+  border: 1.5px solid #141419;
+  animation: notifPulse 2s infinite ease-in-out;
+}
+
+@keyframes notifPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.25); opacity: 0.85; }
+}
+
+.notifications-popover {
+  position: absolute;
+  top: 54px;
+  right: 12px;
+  width: 330px;
+  max-height: 420px;
+  background: rgba(18, 18, 24, 0.96);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: notifPopoverFade 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes notifPopoverFade {
+  from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.notif-popover-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.notif-popover-title-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.notif-popover-title {
+  font-family: var(--font-f1);
+  font-size: 11px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.notif-count-badge {
+  background: var(--f1red);
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+.notif-clear-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 3px 7px;
+  border-radius: 4px;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+
+.notif-clear-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.notif-popover-body {
+  padding: 10px;
+  overflow-y: auto;
+  max-height: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.notif-card {
+  display: flex;
+  gap: 11px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+}
+
+.notif-card:hover {
+  background: rgba(255, 255, 255, 0.075);
+  border-color: rgba(225, 6, 0, 0.45);
+  transform: translateY(-1px);
+}
+
+.notif-icon-box {
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.notif-icon-box.grid-icon {
+  background: rgba(207, 84, 255, 0.12);
+  border-color: rgba(207, 84, 255, 0.3);
+  color: #cf54ff;
+}
+
+.notif-icon-box.live-icon {
+  background: rgba(225, 6, 0, 0.15);
+  border-color: rgba(225, 6, 0, 0.35);
+  color: var(--f1red);
+}
+
+.notif-icon-box.result-icon {
+  background: rgba(255, 193, 7, 0.12);
+  border-color: rgba(255, 193, 7, 0.3);
+  color: #ffc107;
+}
+
+.notif-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.notif-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.notif-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.notif-action-tag {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--f1red);
+  margin-top: 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.notif-empty-state {
+  padding: 28px 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.notif-empty-icon {
+  font-size: 24px;
+  opacity: 0.5;
+}
+
+/* Settings Sections */
+.setting-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0 8px 0;
+  padding: 0 4px;
+}
+
+.setting-section-title {
+  font-family: var(--font-f1);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #ffffff;
+  text-transform: uppercase;
+}
+
+.section-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.section-badge-dot.red {
+  background: var(--f1red);
+  box-shadow: 0 0 6px rgba(225, 6, 0, 0.7);
+}
+
+.section-badge-dot.purple {
+  background: #cf54ff;
+  box-shadow: 0 0 6px rgba(207, 84, 255, 0.7);
 }

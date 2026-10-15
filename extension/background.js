@@ -14,7 +14,10 @@ const DEFAULT_SETTINGS = {
     sprint: true, // Sprint
     quali: true,  // Qualifying
     race: true    // Grand Prix Race
-  }
+  },
+  pushEnabled: true,
+  pushGrid: true,
+  pushLive: true
 };
 
 const CALENDAR_API = 'https://f1.trionine.com/api/current.json';
@@ -29,6 +32,7 @@ api.runtime.onInstalled.addListener(async (details) => {
   console.log('[F1 Alert] Extension installed/updated:', details.reason);
   await initSettings();
   await syncCalendarAndSchedule();
+  await checkQualifyingAndNotify();
   
   // Schedule calendar resync every 6 hours
   api.alarms.create('F1_CALENDAR_SYNC', { periodInMinutes: 360 });
@@ -37,6 +41,7 @@ api.runtime.onInstalled.addListener(async (details) => {
 api.runtime.onStartup.addListener(async () => {
   console.log('[F1 Alert] Browser started, verifying schedule...');
   await syncCalendarAndSchedule();
+  await checkQualifyingAndNotify();
 });
 
 async function initSettings() {
@@ -49,6 +54,94 @@ async function initSettings() {
 async function getSettings() {
   const data = await api.storage.local.get('f1_settings');
   return { ...DEFAULT_SETTINGS, ...(data.f1_settings || {}) };
+}
+
+
+// ============================================================
+// TEAM RADIO AUDIO PLAYBACK ENGINE (F1 Team Radio Beep)
+// ============================================================
+async function playRadioBeep(volume = 0.85) {
+  if (typeof Audio !== "undefined") {
+    try {
+      const audioUrl = api.runtime.getURL("assets/f1_radio.mp3");
+      const radioAudio = new Audio(audioUrl);
+      radioAudio.volume = Math.max(0, Math.min(1, volume));
+      radioAudio.play().catch(e => console.warn("[F1 Alert] Radio audio error:", e));
+      return;
+    } catch (err) {
+      console.warn("[F1 Alert] Radio audio creation error:", err);
+    }
+  }
+
+  if (typeof chrome !== "undefined" && chrome['offscreen']) {
+    try {
+      const hasDoc = chrome['offscreen']['hasDocument'] ? await chrome['offscreen']['hasDocument']() : false;
+      if (!hasDoc) {
+        await chrome['offscreen']['createDocument']({
+          url: "offscreen.html",
+          reasons: ["AUDIO_PLAYBACK"],
+          justification: "F1 radio notification sound"
+        });
+      }
+      chrome.runtime.sendMessage({ action: "PLAY_RADIO", volume }).catch(() => {});
+    } catch (err) {
+      console.warn("[F1 Alert] Chromium offscreen radio error:", err);
+    }
+  }
+}
+
+async function checkQualifyingAndNotify() {
+  const settings = await getSettings();
+  if (!settings.pushEnabled || !settings.pushGrid) return;
+
+  try {
+    const [cRes, qRes] = await Promise.all([
+      fetch(`${CALENDAR_API}?_t=${Date.now()}`),
+      fetch(`https://f1.trionine.com/api/qualifying.json?_t=${Date.now()}`)
+    ]);
+
+    if (!cRes.ok || !qRes.ok) return;
+    const cData = await cRes.json();
+    const qData = await qRes.json();
+
+    const races = cData?.MRData?.RaceTable?.Races || [];
+    const qualis = qData?.MRData?.RaceTable?.Races || [];
+    if (races.length === 0 || qualis.length === 0) return;
+
+    const now = Date.now();
+    let nextRace = null;
+    for (const r of races) {
+      const raceTime = parseSessionTimestamp(r.date, r.time) || (Date.now() + 86400000);
+      if (raceTime + (120 * 60 * 1000) > now) {
+        nextRace = r;
+        break;
+      }
+    }
+
+    const latestQuali = qualis[qualis.length - 1];
+    if (nextRace && latestQuali && String(nextRace.round) === String(latestQuali.round)) {
+      const stored = await api.storage.local.get("f1_alerted_grid_round");
+      if (stored.f1_alerted_grid_round !== String(latestQuali.round)) {
+        await api.storage.local.set({ f1_alerted_grid_round: String(latestQuali.round) });
+
+        const pole = latestQuali.QualifyingResults?.[0];
+        const poleName = pole?.Driver ? `${pole.Driver.givenName || ""} ${pole.Driver.familyName || ""}`.trim() : "Pole Sitter";
+        const poleTime = pole?.Q3 || pole?.Q2 || pole?.Q1 || "";
+
+        api.notifications.create(`f1_grid_${latestQuali.round}`, {
+          type: "basic",
+          iconUrl: api.runtime.getURL("assets/icon128.png"),
+          title: `Starting Grid Confirmed • ${latestQuali.raceName}`,
+          message: `Pole Position: ${poleName} (${poleTime}). View starting grid.`,
+          priority: 2
+        });
+
+        playRadioBeep(settings.volume || 0.85);
+      }
+    }
+  } catch (err) {
+    console.warn("[F1 Alert] Qualifying check error:", err);
+  }
 }
 
 // ============================================================
@@ -82,11 +175,11 @@ async function playF1Theme(volume = 0.85) {
   }
 
   // 2. Offscreen Audio (Chromium Service Worker: Chrome, Brave, Edge)
-  if (typeof chrome !== 'undefined' && chrome.offscreen) {
+  if (typeof chrome !== 'undefined' && chrome['offscreen']) {
     try {
-      const hasDoc = chrome.offscreen.hasDocument ? await chrome.offscreen.hasDocument() : false;
+      const hasDoc = chrome['offscreen']['hasDocument'] ? await chrome['offscreen']['hasDocument']() : false;
       if (!hasDoc) {
-        await chrome.offscreen.createDocument({
+        await chrome['offscreen']['createDocument']({
           url: 'offscreen.html',
           reasons: ['AUDIO_PLAYBACK'],
           justification: 'F1 pre-session alert music'
@@ -289,6 +382,19 @@ api.notifications.onClicked.addListener(() => {
 // RUNTIME MESSAGE HANDLER (From Popup UI)
 // ============================================================
 api.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.action === "TEST_RADIO") {
+    const volume = typeof msg.volume === "number" ? msg.volume : 0.85;
+    playRadioBeep(volume);
+    api.notifications.create("f1_test_radio_notification", {
+      type: "basic",
+      iconUrl: api.runtime.getURL("assets/icon128.png"),
+      title: "Team Radio Alert",
+      message: "Qualifying results confirmed. Testing team radio notification sound.",
+      priority: 2
+    });
+    sendResponse({ status: "ok" });
+    return true;
+  }
   if (msg.action === 'TEST_ALARM') {
     const volume = typeof msg.volume === 'number' ? msg.volume : 0.85;
     

@@ -24,15 +24,20 @@
           </svg>
         </a>
         <div class="brand-lockup">
-          <a href="https://f1.trionine.com" target="_blank" rel="noopener noreferrer" class="brand-dash-link" title="Open F1 Dash (f1.trionine.com)">
-            <span class="brand-dash">DASH</span>
-          </a>
+          <span class="brand-dash">DASH</span>
           <span class="brand-subtitle">by <a href="https://trionine.com" target="_blank" rel="noopener noreferrer">trionine</a></span>
         </div>
       </div>
 
       <div class="top-controls">
         <span class="season-pill">2026</span>
+        <button class="icon-btn notif-bell-btn" id="btn-open-notifications" title="Race Alerts & Notifications" aria-label="Notifications">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          <span class="notification-badge-dot" id="notification-badge-dot" style="display: none;"></span>
+        </button>
         <button class="icon-btn" id="btn-open-settings" title="Settings & Preferences">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3"></circle>
@@ -41,6 +46,20 @@
         </button>
       </div>
     </header>
+
+    <!-- Floating Notifications Popover (Option A) -->
+    <div class="notifications-popover" id="notifications-popover" style="display: none;">
+      <div class="notif-popover-header">
+        <div class="notif-popover-title-row">
+          <span class="notif-popover-title">RACE NOTIFICATIONS</span>
+          <span class="notif-count-badge" id="notif-count-badge">0</span>
+        </div>
+        <button class="notif-clear-btn" id="btn-clear-notifications" title="Clear all notifications">Clear All</button>
+      </div>
+      <div class="notif-popover-body" id="notif-popover-list">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
 
     <!-- Content Viewport (Tabs) -->
     <div class="tab-viewport">
@@ -143,6 +162,12 @@
            TAB 3: RECENT RESULTS & PODIUMS
            ======================================================== -->
       <section id="tab-results" class="tab-pane">
+        <!-- Sub-tabs: Race Results vs Starting Grid (Grid tab only shown when available like website) -->
+        <div class="segmented-control" id="results-segmented-control" style="display: none; margin-bottom: 12px;">
+          <button class="seg-btn active" id="btn-results-race">Race Results</button>
+          <button class="seg-btn" id="btn-results-grid">Starting Grid</button>
+        </div>
+
         <div class="results-header-card" id="results-hero-card">
           <div class="results-gp-title" id="results-gp-name">Latest Grand Prix</div>
           <div class="podium-showcase" id="results-podium-showcase">
@@ -151,13 +176,24 @@
         </div>
 
         <!-- Finished Races List (Clicking updates top showcase) -->
-        <div class="card-section">
+        <div class="card-section" id="results-race-section">
           <div class="section-bar">
             <span class="red-bar-icon"></span>
             <span class="section-title">2026 RACE FINISHES</span>
           </div>
           <div id="results-season-list" class="results-list">
             <div class="loading-state">Loading completed races...</div>
+          </div>
+        </div>
+
+        <!-- Starting Grid Section -->
+        <div class="card-section" id="results-grid-section" style="display: none;">
+          <div class="section-bar">
+            <span class="red-bar-icon"></span>
+            <span class="section-title" id="results-grid-title">STARTING GRID</span>
+          </div>
+          <div id="results-grid-list" class="results-list">
+            <div class="loading-state">Loading starting grid...</div>
           </div>
         </div>
       </section>
@@ -168,10 +204,14 @@
       <section id="tab-live" class="tab-pane">
         <!-- Live Leaderboard Widget with Nitrous-style Track Status -->
         <div class="card-section">
-          <div class="section-bar" style="justify-content: space-between;">
+          <div class="section-bar" style="justify-content: space-between; align-items: center;">
             <div style="display: flex; align-items: center; gap: 8px;">
               <span class="red-bar-icon"></span>
               <span class="section-title">LIVE TIMING TOWER</span>
+            </div>
+            <div class="session-progress-badge" id="session-progress-badge" style="display: none;" title="Session Progress">
+              <span class="progress-type" id="progress-type">LAP</span>
+              <span class="progress-val" id="progress-val"></span>
             </div>
             <div class="nitrous-status-pill status-green" id="track-status-pill" title="Race Control Status">
               <span class="nitrous-status-label" id="track-status-label">Clear</span>
@@ -227,12 +267,12 @@
       </button>
 
       <button class="nav-tab-btn" data-tab="tab-live">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4.93 19.07a10 10 0 0 1 0-14.14"></path>
-          <path d="M7.76 16.24a6 6 0 0 1 0-8.48"></path>
-          <circle cx="12" cy="12" r="2"></circle>
-          <path d="M16.24 7.76a6 6 0 0 1 0 8.48"></path>
-          <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+        <svg class="live-nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path class="live-wave-outer" d="M4.93 19.07a10 10 0 0 1 0-14.14"></path>
+          <path class="live-wave-inner" d="M7.76 16.24a6 6 0 0 1 0-8.48"></path>
+          <circle class="live-wave-center" cx="12" cy="12" r="2"></circle>
+          <path class="live-wave-inner" d="M16.24 7.76a6 6 0 0 1 0 8.48"></path>
+          <path class="live-wave-outer" d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
         </svg>
         <span>Live</span>
       </button>
@@ -256,14 +296,18 @@
     </header>
 
     <main class="settings-body">
-      <!-- Master Switch (Moved to top of Settings) -->
+      <!-- System 1: Race Reminder Alarm (Pre-session music alert) -->
+      <div class="setting-section-header">
+        <span class="section-badge-dot red"></span>
+        <span class="setting-section-title">PRE-SESSION REMINDER ALARM</span>
+      </div>
       <div class="setting-card master-card">
         <div class="master-row">
           <div>
-            <span class="setting-title">MASTER ALARM SYSTEM</span>
-            <span class="setting-hint">Enable or mute all pre-session audio and desktop alerts</span>
+            <span class="setting-title">AUDIO REMINDER ALARM</span>
+            <span class="setting-hint">Play official F1 Theme music before green light</span>
           </div>
-          <label class="toggle-switch" title="Toggle Alarms (Active / Off)">
+          <label class="toggle-switch" title="Toggle Pre-Session Alarm (Active / Off)">
             <input type="checkbox" id="master-switch" checked>
             <span class="slider"></span>
           </label>
@@ -351,6 +395,63 @@
               <rect x="5" y="5" width="14" height="14" rx="2"></rect>
             </svg>
             <span>Stop Sound</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- System 2: Standard Desktop Push Notifications -->
+      <div class="setting-section-header" style="margin-top: 20px;">
+        <span class="section-badge-dot purple"></span>
+        <span class="setting-section-title">STANDARD PUSH NOTIFICATIONS</span>
+      </div>
+
+      <div class="setting-card master-card">
+        <div class="master-row">
+          <div>
+            <span class="setting-title">DESKTOP PUSH ALERTS</span>
+            <span class="setting-hint">Receive browser alerts and bell updates</span>
+          </div>
+          <label class="toggle-switch" title="Toggle Push Notifications (Active / Off)">
+            <input type="checkbox" id="push-switch" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="setting-card">
+        <div class="setting-header">
+          <span class="setting-title">PUSH EVENT ALERTS</span>
+          <span class="setting-hint">Select race events for desktop notifications</span>
+        </div>
+        <div class="sessions-toggle-grid">
+          <label class="custom-cb">
+            <input type="checkbox" id="cb-push-grid" checked>
+            <span class="cb-checkmark"></span>
+            <span class="cb-label-text">Starting Grid & Pole</span>
+          </label>
+          <label class="custom-cb">
+            <input type="checkbox" id="cb-push-live" checked>
+            <span class="cb-checkmark"></span>
+            <span class="cb-label-text">Session Underway</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="setting-card">
+        <div class="setting-header">
+          <span class="setting-title">TEAM RADIO ALERT SOUND</span>
+          <span class="setting-hint">Preview the official F1 team radio notification</span>
+        </div>
+        <div class="test-alarm-row">
+          <button id="btn-test-radio" class="f1-btn f1-btn-primary" style="background: #272733; border: 1px solid rgba(255,255,255,0.15);">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"></path>
+              <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"></path>
+              <circle cx="12" cy="12" r="2"></circle>
+              <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"></path>
+              <path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"></path>
+            </svg>
+            <span id="test-radio-text">Test Radio Alert</span>
           </button>
         </div>
       </div>
