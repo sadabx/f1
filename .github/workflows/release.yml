@@ -1,0 +1,134 @@
+name: Release F1 Dash
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag to build, such as v1.2.0
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build, Package & Release Extension
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Resolve version
+        id: release
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]
+          echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "version=${RELEASE_TAG#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.release.outputs.tag }}
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build extension packages
+        run: |
+          chmod +x extension/package.sh
+          ./extension/package.sh
+
+      - name: Verify Firefox AMO linter
+        run: |
+          npx -y addons-linter extension/f1_dash.zip
+
+      - name: Build release notes from commits
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          previous_tag="$(git describe --tags --abbrev=0 "${RELEASE_TAG}^" 2>/dev/null || true)"
+          if [[ -n "$previous_tag" ]]; then
+            range="$previous_tag..$RELEASE_TAG"
+          else
+            range="$RELEASE_TAG"
+          fi
+
+          {
+            echo "## What's new"
+            echo
+            # Only include commits that modified the extension directory and ignore automated scraping commits
+            git log "$range" --no-merges --pretty=format:'- %s' -- extension/ \
+              | grep -v -i -E "Automated API Update|scrape" || true
+            echo
+            if [[ -n "$previous_tag" ]]; then
+              echo
+              echo "**Full Changelog:** [$previous_tag...$RELEASE_TAG]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/compare/$previous_tag...$RELEASE_TAG)"
+            fi
+          } > release-notes.md
+
+          # Generate AMO metadata JSON so the changelog appears on the Firefox Add-ons store listing
+          python3 -c 'import json; notes = open("release-notes.md").read(); json.dump({"version": {"release_notes": {"en-US": notes}}}, open("amo-metadata.json", "w"), indent=2)'
+
+      - name: Create release and upload assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          assets=(extension/f1_dash_chrome.zip extension/f1_dash.xpi extension/f1_dash.zip)
+
+          if ! gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            release_flags=(--draft --verify-tag --notes-file release-notes.md)
+            if [[ "$VERSION" == *-* ]]; then
+              release_flags+=(--prerelease)
+            else
+              release_flags+=(--latest)
+            fi
+            gh release create "$RELEASE_TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "F1 Dash v$VERSION" \
+              "${release_flags[@]}"
+          fi
+
+          gh release upload "$RELEASE_TAG" "${assets[@]}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --clobber
+          gh release edit "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --notes-file release-notes.md \
+            --draft=false
+
+      - name: Push to Firefox Add-ons (AMO)
+        env:
+          AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
+          AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+        run: |
+          if [ -n "$AMO_JWT_ISSUER" ] && [ -n "$AMO_JWT_SECRET" ]; then
+            echo "Submitting extension update directly to Mozilla Add-ons (AMO)..."
+            npx -y web-ext sign \
+              --source-dir extension \
+              --api-key="$AMO_JWT_ISSUER" \
+              --api-secret="$AMO_JWT_SECRET" \
+              --channel=listed \
+              --approval-timeout=0 \
+              --amo-metadata=amo-metadata.json \
+              --ignore-files="package.sh" "manifest.chrome.json" "dist_chrome/**" "*.zip" "*.xpi"
+          else
+            echo "Mozilla AMO credentials not found, skipping Firefox Add-ons upload."
+          fi
