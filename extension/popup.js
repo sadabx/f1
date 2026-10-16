@@ -930,7 +930,7 @@ async function loadResults() {
         resultsSubTab = "race";
         btnRace.classList.add("active");
         btnGrid.classList.remove("active");
-        if (raceSection) raceSection.style.display = "block";
+        if (raceSection) raceSection.style.display = "flex";
         if (gridSection) gridSection.style.display = "none";
 
         const activeCard = container?.querySelector(".result-row-card.active-race");
@@ -944,9 +944,23 @@ async function loadResults() {
         btnGrid.classList.add("active");
         btnRace.classList.remove("active");
         if (raceSection) raceSection.style.display = "none";
-        if (gridSection) gridSection.style.display = "block";
+        if (gridSection) gridSection.style.display = "flex";
         if (latestQualifyingData) renderStartingGrid(latestQualifyingData);
       });
+    }
+
+    // Delegate wheel events on #tab-results to the active list so scrolling works everywhere
+    const tabResults = document.getElementById("tab-results");
+    if (tabResults && !tabResults.dataset.wheelBound) {
+      tabResults.dataset.wheelBound = "true";
+      tabResults.addEventListener("wheel", (e) => {
+        const activeList = resultsSubTab === "grid"
+          ? document.getElementById("results-grid-list")
+          : document.getElementById("results-season-list");
+        if (activeList && !activeList.contains(e.target)) {
+          activeList.scrollTop += e.deltaY;
+        }
+      }, { passive: true });
     }
 
     // Render active sub-tab view
@@ -954,12 +968,12 @@ async function loadResults() {
       if (btnGrid) btnGrid.classList.add("active");
       if (btnRace) btnRace.classList.remove("active");
       if (raceSection) raceSection.style.display = "none";
-      if (gridSection) gridSection.style.display = "block";
+      if (gridSection) gridSection.style.display = "flex";
       renderStartingGrid(latestQualifyingData);
     } else {
       if (btnRace) btnRace.classList.add("active");
       if (btnGrid) btnGrid.classList.remove("active");
-      if (raceSection) raceSection.style.display = "block";
+      if (raceSection) raceSection.style.display = "flex";
       if (gridSection) gridSection.style.display = "none";
 
       if (races.length === 0) {

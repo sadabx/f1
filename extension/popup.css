@@ -2488,7 +2488,7 @@ body {
   padding-bottom: 5px;
 }
 
-/* Results Tab: Pinned/Sticky Top Podium with Scrollable Finishes List */
+/* Results Tab: Pinned/Sticky Top Podium with Scrollable Finishes & Starting Grid */
 #tab-results {
   height: 100%;
   min-height: 0;
@@ -2506,18 +2506,27 @@ body {
   flex-direction: column;
 }
 
+#tab-results #results-segmented-control {
+  flex: 0 0 auto;
+  margin-bottom: 0 !important;
+}
+
 #tab-results .results-header-card {
   flex: 0 0 auto;
   z-index: 10;
 }
 
 #tab-results .card-section {
-  display: flex;
+  display: flex !important;
   flex-direction: column;
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
   padding: 10px 10px 8px;
   overflow: hidden;
+}
+
+#tab-results .card-section[style*="display: none"] {
+  display: none !important;
 }
 
 #tab-results .card-section .section-bar {
@@ -2525,14 +2534,25 @@ body {
   margin-bottom: 7px;
 }
 
-#tab-results #results-season-list {
+#tab-results #results-season-list,
+#tab-results #results-grid-list {
   display: flex;
   flex-direction: column;
   gap: 4px;
   flex: 1 1 auto;
   min-height: 0;
+  max-height: 100%;
   overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 3px;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+#tab-results .result-row-card,
+#tab-results .grid-row-card {
+  flex-shrink: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
