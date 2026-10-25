@@ -6,7 +6,7 @@
           "DriverStandings": [
             {
               "position": "1",
-              "points": "340",
+              "points": "365",
               "Driver": {
                 "givenName": "Kimi",
                 "familyName": "Antonelli",
@@ -20,7 +20,7 @@
             },
             {
               "position": "2",
-              "points": "238",
+              "points": "242",
               "Driver": {
                 "givenName": "George",
                 "familyName": "Russell",
@@ -34,7 +34,7 @@
             },
             {
               "position": "3",
-              "points": "229",
+              "points": "241",
               "Driver": {
                 "givenName": "Lewis",
                 "familyName": "Hamilton",
@@ -48,7 +48,7 @@
             },
             {
               "position": "4",
-              "points": "221",
+              "points": "236",
               "Driver": {
                 "givenName": "Max",
                 "familyName": "Verstappen",
@@ -62,7 +62,7 @@
             },
             {
               "position": "5",
-              "points": "215",
+              "points": "233",
               "Driver": {
                 "givenName": "Charles",
                 "familyName": "Leclerc",
@@ -76,7 +76,7 @@
             },
             {
               "position": "6",
-              "points": "201",
+              "points": "211",
               "Driver": {
                 "givenName": "Lando",
                 "familyName": "Norris",
@@ -90,7 +90,7 @@
             },
             {
               "position": "7",
-              "points": "138",
+              "points": "144",
               "Driver": {
                 "givenName": "Oscar",
                 "familyName": "Piastri",
@@ -104,7 +104,7 @@
             },
             {
               "position": "8",
-              "points": "97",
+              "points": "105",
               "Driver": {
                 "givenName": "Isack",
                 "familyName": "Hadjar",
@@ -118,7 +118,7 @@
             },
             {
               "position": "9",
-              "points": "75",
+              "points": "77",
               "Driver": {
                 "givenName": "Liam",
                 "familyName": "Lawson",
@@ -132,7 +132,7 @@
             },
             {
               "position": "10",
-              "points": "41",
+              "points": "42",
               "Driver": {
                 "givenName": "Pierre",
                 "familyName": "Gasly",
