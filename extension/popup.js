@@ -762,8 +762,6 @@ function renderPodiumShowcase(race) {
 
 function renderStartingGrid(quali) {
   const gridContainer = document.getElementById("results-grid-list");
-  const latestGpTitle = document.getElementById("results-gp-name");
-  const podiumShowcase = document.getElementById("results-podium-showcase");
   const gridTitle = document.getElementById("results-grid-title");
 
   if (!quali || !quali.QualifyingResults || quali.QualifyingResults.length === 0) {
@@ -771,55 +769,14 @@ function renderStartingGrid(quali) {
     return;
   }
 
-  if (latestGpTitle) {
-    latestGpTitle.classList.remove("historical");
-    latestGpTitle.textContent = `${quali.raceName} • Starting Grid`;
-  }
   if (gridTitle) {
-    gridTitle.textContent = `${quali.raceName.toUpperCase()} GRID ORDER`;
+    const gpShort = (quali.raceName || "").replace(/ Grand Prix$/i, " GP").replace(/ Grand Prix/i, " GP");
+    gridTitle.textContent = `${gpShort.toUpperCase()} - QUALIFYING`;
   }
 
   const results = quali.QualifyingResults;
-  const p1 = results[0];
-  const p2 = results[1];
-  const p3 = results[2];
 
-  // Top front-row showcase
-  if (podiumShowcase) {
-    const t1Color = getTeamColor(p1?.Constructor?.name || p1?.Constructor?.constructorId);
-    const t2Color = getTeamColor(p2?.Constructor?.name || p2?.Constructor?.constructorId);
-    const t3Color = getTeamColor(p3?.Constructor?.name || p3?.Constructor?.constructorId);
-
-    const styleFor = (color, isP1) => {
-      const bg = `linear-gradient(180deg, ${hexToRgba(color, isP1 ? 0.28 : 0.22)} 0%, rgba(18, 18, 22, 0.9) 100%)`;
-      const borderTop = `${isP1 ? 3.5 : 3}px solid ${color}`;
-      const border = `1px solid ${hexToRgba(color, isP1 ? 0.38 : 0.28)}`;
-      const shadow = isP1
-        ? `0 6px 20px -2px ${hexToRgba(color, 0.42)}, 0 0 12px ${hexToRgba(color, 0.16)}`
-        : `0 4px 14px -3px ${hexToRgba(color, 0.3)}`;
-      return `background: ${bg}; border: ${border}; border-top: ${borderTop}; box-shadow: ${shadow}; --team-color: ${color};`;
-    };
-
-    setSafeContent(podiumShowcase, `
-      <div class="podium-slot p2" style="${styleFor(t2Color, false)}">
-        <span class="podium-rank-badge" style="border-color: ${t2Color};">2</span>
-        <span class="podium-driver-name">${p2?.Driver?.code || p2?.Driver?.familyName || "—"}</span>
-        <span class="podium-team-name">${p2?.Constructor?.name || ""}</span>
-      </div>
-      <div class="podium-slot p1" style="${styleFor(t1Color, true)}">
-        <span class="podium-rank-badge" style="border-color: ${t1Color};">1</span>
-        <span class="podium-driver-name">${p1?.Driver?.code || p1?.Driver?.familyName || "—"}</span>
-        <span class="podium-team-name">${p1?.Constructor?.name || ""}</span>
-      </div>
-      <div class="podium-slot p3" style="${styleFor(t3Color, false)}">
-        <span class="podium-rank-badge" style="border-color: ${t3Color};">3</span>
-        <span class="podium-driver-name">${p3?.Driver?.code || p3?.Driver?.familyName || "—"}</span>
-        <span class="podium-team-name">${p3?.Constructor?.name || ""}</span>
-      </div>
-    `);
-  }
-
-  // Render full starting grid rows with pole time & deltas
+  // Render clean starting grid list matching f1.trionine.com layout
   let poleTimeSec = null;
   const gridHtml = results.map((res, index) => {
     const team = res.Constructor?.name || "";
@@ -831,7 +788,7 @@ function renderStartingGrid(quali) {
     if (timeStr) {
       const parts = timeStr.split(":");
       let currentSec = Infinity;
-      if (parts.length === 2) currentSec = (parseInt(parts[0]) * 60) + parseFloat(parts[1]);
+      if (parts.length === 2) currentSec = (parseInt(parts[0], 10) * 60) + parseFloat(parts[1]);
       else currentSec = parseFloat(timeStr);
 
       if (index === 0) {
@@ -849,17 +806,15 @@ function renderStartingGrid(quali) {
     const isPole = index === 0;
 
     return `
-      <div class="grid-row-card">
-        <div class="grid-row-left">
-          <span class="grid-pos ${isPole ? "pos-pole" : ""}">P${String(res.position).padStart(2, "0")}</span>
-          <div class="grid-team-bar" style="background: ${col};"></div>
-          <div class="grid-driver-meta">
-            <span class="grid-driver-name">${driverFullName}</span>
-            <span class="grid-team-name">${team}</span>
+      <div class="grid-row ${isPole ? "pos-pole" : ""}">
+        <span class="g-pos">${res.position}</span>
+        <div class="g-bar" style="background: ${col};"></div>
+        <div class="g-info">
+          <div>
+            <div class="s-name">${driverFullName}</div>
+            <div class="s-team">${team}</div>
           </div>
-        </div>
-        <div class="grid-time-val ${isPole ? "time-pole" : ""}">
-          ${displayTime}
+          <div class="g-time ${isPole ? "time-pole" : ""}">${displayTime}</div>
         </div>
       </div>
     `;
@@ -875,6 +830,7 @@ async function loadResults() {
   const btnGrid = document.getElementById("btn-results-grid");
   const raceSection = document.getElementById("results-race-section");
   const gridSection = document.getElementById("results-grid-section");
+  const heroCard = document.getElementById("results-hero-card");
 
   try {
     // Ensure schedule is loaded for next race round comparison
@@ -930,6 +886,7 @@ async function loadResults() {
         resultsSubTab = "race";
         btnRace.classList.add("active");
         btnGrid.classList.remove("active");
+        if (heroCard) heroCard.style.display = "block";
         if (raceSection) raceSection.style.display = "flex";
         if (gridSection) gridSection.style.display = "none";
 
@@ -943,6 +900,7 @@ async function loadResults() {
         resultsSubTab = "grid";
         btnGrid.classList.add("active");
         btnRace.classList.remove("active");
+        if (heroCard) heroCard.style.display = "none";
         if (raceSection) raceSection.style.display = "none";
         if (gridSection) gridSection.style.display = "flex";
         if (latestQualifyingData) renderStartingGrid(latestQualifyingData);
@@ -967,12 +925,14 @@ async function loadResults() {
     if (resultsSubTab === "grid" && hasGridForUpcoming && latestQualifyingData) {
       if (btnGrid) btnGrid.classList.add("active");
       if (btnRace) btnRace.classList.remove("active");
+      if (heroCard) heroCard.style.display = "none";
       if (raceSection) raceSection.style.display = "none";
       if (gridSection) gridSection.style.display = "flex";
       renderStartingGrid(latestQualifyingData);
     } else {
       if (btnRace) btnRace.classList.add("active");
       if (btnGrid) btnGrid.classList.remove("active");
+      if (heroCard) heroCard.style.display = "block";
       if (raceSection) raceSection.style.display = "flex";
       if (gridSection) gridSection.style.display = "none";
 
@@ -1734,6 +1694,71 @@ function setupUIEventListeners() {
     btnClearNotifs.addEventListener('click', (e) => {
       e.stopPropagation();
       dismissAllNotifications();
+    });
+  }
+
+  // Settings: Clear Cache & Force Re-sync
+  const btnClearCache = document.getElementById('btn-clear-cache');
+  const btnClearCacheText = document.getElementById('btn-clear-cache-text');
+  if (btnClearCache) {
+    btnClearCache.addEventListener('click', async () => {
+      if (btnClearCacheText) btnClearCacheText.textContent = 'Clearing Cache...';
+      btnClearCache.disabled = true;
+
+      try {
+        // 1. Preserve settings while wiping cached data
+        let savedSettings = null;
+        if (typeof api !== 'undefined' && api?.storage?.local) {
+          const stored = await api.storage.local.get('f1_settings');
+          savedSettings = stored?.f1_settings;
+          await api.storage.local.clear();
+          if (savedSettings) {
+            await api.storage.local.set({ f1_settings: savedSettings });
+          }
+        }
+
+        // 2. Clear localStorage caches while preserving settings
+        const lsSettings = localStorage.getItem('f1_settings');
+        localStorage.clear();
+        if (lsSettings) {
+          localStorage.setItem('f1_settings', lsSettings);
+        }
+
+        // 3. Reset in-memory cached state
+        allRaces = [];
+        actualNextRaceIndex = 0;
+        standingsData = null;
+        allResultsRaces = [];
+        latestQualifyingData = null;
+        dismissedNotifIds.clear();
+
+        // 4. Signal background worker to re-sync calendar
+        try {
+          if (typeof api !== 'undefined' && api?.runtime?.sendMessage) {
+            api.runtime.sendMessage({ action: 'FORCE_SYNC' });
+          }
+        } catch (_) {}
+
+        // 5. Reload dashboard data fresh from APIs
+        await Promise.allSettled([
+          loadDashboard(),
+          loadStandings(),
+          loadResults()
+        ]);
+
+        if (btnClearCacheText) btnClearCacheText.textContent = '✓ Cache Cleared & Refreshed!';
+        btnClearCache.style.borderColor = '#27F4D2';
+        btnClearCache.style.color = '#27F4D2';
+      } catch (err) {
+        if (btnClearCacheText) btnClearCacheText.textContent = 'Cache Cleared!';
+      } finally {
+        setTimeout(() => {
+          if (btnClearCacheText) btnClearCacheText.textContent = 'Clear Cache & Refresh';
+          btnClearCache.disabled = false;
+          btnClearCache.style.borderColor = 'rgba(225, 6, 0, 0.4)';
+          btnClearCache.style.color = '#fff';
+        }, 2000);
+      }
     });
   }
 

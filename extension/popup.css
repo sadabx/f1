@@ -2960,3 +2960,129 @@ body {
   background: #cf54ff;
   box-shadow: 0 0 6px rgba(207, 84, 255, 0.7);
 }
+
+/* ============================================================
+   STARTING GRID: COMPACT TABLE LAYOUT (Matches f1.trionine.com)
+   ============================================================ */
+#tab-results #results-grid-section {
+  padding: 0 !important;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+#tab-results #results-grid-section .section-bar {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0 !important;
+  background: rgba(255, 255, 255, 0.02);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#tab-results #results-grid-section .section-bar .red-bar-icon {
+  display: none !important;
+}
+
+#tab-results #results-grid-section .section-title {
+  text-align: center;
+  letter-spacing: 0.9px;
+}
+
+#tab-results #results-grid-list {
+  gap: 0;
+  padding-right: 0;
+}
+
+.grid-row {
+  display: flex;
+  align-items: center;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border);
+  transition: background-color 0.12s ease;
+  flex-shrink: 0;
+}
+
+.grid-row:last-child {
+  border-bottom: none;
+}
+
+.grid-row:hover {
+  background-color: rgba(255, 255, 255, 0.035);
+}
+
+.grid-row .g-pos {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  width: 22px;
+  text-align: right;
+  flex-shrink: 0;
+  margin-right: 12px;
+}
+
+.grid-row.pos-pole .g-pos {
+  color: #ffc83b;
+}
+
+.grid-row .g-bar {
+  width: 4px;
+  height: 18px;
+  border-radius: 2px;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.grid-row .g-info {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-width: 0;
+}
+
+.grid-row .s-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.1px;
+}
+
+.grid-row .s-team {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.grid-row .g-time {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-align: right;
+  flex-shrink: 0;
+  margin-left: 10px;
+}
+
+.grid-row .g-time.time-pole {
+  color: #cf54ff; /* Authentic F1 purple for pole position time */
+  font-weight: 800;
+}
+
+#btn-clear-cache {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+#btn-clear-cache:hover:not(:disabled) {
+  background: rgba(225, 6, 0, 0.24) !important;
+  border-color: rgba(225, 6, 0, 0.6) !important;
+}
