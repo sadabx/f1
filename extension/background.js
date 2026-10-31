@@ -52,8 +52,34 @@ async function initSettings() {
 }
 
 async function getSettings() {
-  const data = await api.storage.local.get('f1_settings');
-  return { ...DEFAULT_SETTINGS, ...(data.f1_settings || {}) };
+  const data = await api.storage.local.get("f1_settings");
+  const raw = data.f1_settings || {};
+  const master = raw.alarmEnabled !== undefined ? raw.alarmEnabled : (raw.masterEnabled !== undefined ? raw.masterEnabled : true);
+  const lead = raw.leadTime !== undefined ? raw.leadTime : (raw.leadMinutes !== undefined ? raw.leadMinutes : 5);
+  const sound = raw.soundEnabled !== undefined ? raw.soundEnabled : (raw.alarmEnabled !== undefined ? raw.alarmEnabled : true);
+  let vol = raw.volume !== undefined ? raw.volume : 0.85;
+  if (vol > 1) vol = vol / 100;
+
+  return {
+    ...DEFAULT_SETTINGS,
+    ...raw,
+    masterEnabled: Boolean(master),
+    alarmEnabled: Boolean(master),
+    leadMinutes: Number(lead) || 5,
+    leadTime: Number(lead) || 5,
+    soundEnabled: Boolean(sound),
+    volume: Math.max(0, Math.min(1, vol))
+  };
+}
+
+// Reschedule immediately whenever settings change from popup UI
+if (api.storage && api.storage.onChanged) {
+  api.storage.onChanged.addListener((changes, area) => {
+    if (area === "local" && changes.f1_settings) {
+      console.log("[F1 Alert] Settings updated in storage, rescheduling alarms...");
+      syncCalendarAndSchedule();
+    }
+  });
 }
 
 
@@ -336,8 +362,8 @@ api.alarms.onAlarm.addListener(async (alarm) => {
   }
 
   if (alarm.name.startsWith('f1_sess_')) {
-    const data = await api.storage.local.get(['f1_scheduled_alarms', 'f1_settings']);
-    const settings = { ...DEFAULT_SETTINGS, ...(data.f1_settings || {}) };
+    const data = await api.storage.local.get(["f1_scheduled_alarms"]);
+    const settings = await getSettings();
     const sessInfo = data.f1_scheduled_alarms?.[alarm.name];
 
     if (!settings.masterEnabled) return;

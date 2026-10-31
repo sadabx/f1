@@ -3086,3 +3086,100 @@ body {
   background: rgba(225, 6, 0, 0.24) !important;
   border-color: rgba(225, 6, 0, 0.6) !important;
 }
+
+
+/* ============================================================
+   LIVE BROADCAST & STREAM BANNER
+   ============================================================ */
+.live-broadcast-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, rgba(225, 6, 0, 0.14) 0%, rgba(20, 20, 26, 0.9) 100%);
+  border: 1px solid rgba(225, 6, 0, 0.35);
+  border-left: 3px solid var(--f1red);
+  border-radius: 6px;
+}
+
+.live-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.live-banner-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--f1red);
+  box-shadow: 0 0 8px var(--f1red);
+  animation: pulseAnim 1.2s infinite;
+  flex-shrink: 0;
+}
+
+.live-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.live-banner-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  color: #ffffff;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.live-banner-status {
+  font-size: 9.5px;
+  font-weight: 500;
+  color: #a0a0ab;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.live-watch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  background: var(--f1red);
+  color: #ffffff !important;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  border-radius: 4px;
+  text-decoration: none;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(225, 6, 0, 0.4);
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.live-watch-btn:hover {
+  background: #ff1a38;
+  transform: translateY(-1px);
+}
+
+.live-watch-btn:active {
+  transform: scale(0.96);
+}
+
+.timing-provider-note {
+  font-size: 9px;
+  color: var(--text-dim);
+  text-align: center;
+  padding: 8px 4px 2px;
+  line-height: 1.3;
+}

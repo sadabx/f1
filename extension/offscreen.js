@@ -1,13 +1,13 @@
+// Offscreen audio player for Manifest V3 background audio
+const audio = document.getElementById("f1-theme-audio");
+const radioAudio = document.getElementById("f1-radio-audio");
+let currentOscillators = [];
+
 if (audio) {
   audio.onended = () => {
-    chrome.runtime.sendMessage({ action: 'AUDIO_ENDED' }).catch(() => {});
+    chrome.runtime.sendMessage({ action: "AUDIO_ENDED" }).catch(() => {});
   };
 }
-
-// Offscreen audio player for Manifest V3 background audio
-const audio = document.getElementById('f1-theme-audio');
-const radioAudio = document.getElementById('f1-radio-audio');
-let currentOscillators = [];
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.action === 'PLAY_RADIO') {

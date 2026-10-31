@@ -96,6 +96,15 @@ const STATIC_DRIVERS = {
   87: { code: 'BEA', name: 'Oliver Bearman', color: '#B6BABD' }
 };
 
+function getDriverNumberFromCode(code) {
+  if (!code) return null;
+  const clean = String(code).toUpperCase().trim();
+  for (const [num, d] of Object.entries(STATIC_DRIVERS)) {
+    if (d.code === clean) return parseInt(num, 10);
+  }
+  return null;
+}
+
 const SESSION_DURATIONS = {
   fp: 60 * 60 * 1000,
   sq: 45 * 60 * 1000,
@@ -189,7 +198,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadSettings() {
   const defaults = {
     alarmEnabled: true,
-    leadTime: 10,
+    masterEnabled: true,
+    leadTime: 5,
+    leadMinutes: 5,
+    soundEnabled: true,
     volume: 85,
     sessions: { fp: true, sq: true, sprint: true, quali: true, race: true },
     pushEnabled: true,
@@ -243,7 +255,15 @@ function applySettingsToUI() {
 
 function saveSettings() {
   if (!currentSettings) return;
+  currentSettings.masterEnabled = !!currentSettings.alarmEnabled;
+  currentSettings.soundEnabled = !!currentSettings.alarmEnabled;
+  currentSettings.leadMinutes = currentSettings.leadTime || 5;
+
   api.storage.local.set({ f1_settings: currentSettings });
+
+  if (typeof api !== "undefined" && api?.runtime?.sendMessage) {
+    api.runtime.sendMessage({ action: "UPDATE_SETTINGS", settings: currentSettings }).catch(() => {});
+  }
 }
 
 // ============================================================
@@ -267,9 +287,15 @@ function setupNavigation() {
       if (targetId === 'tab-results') loadResults();
       if (targetId === 'tab-live') {
         loadLiveTelemetry();
-      } else if (sessionCountdownInterval) {
-        clearInterval(sessionCountdownInterval);
-        sessionCountdownInterval = null;
+      } else {
+        if (sessionCountdownInterval) {
+          clearInterval(sessionCountdownInterval);
+          sessionCountdownInterval = null;
+        }
+        if (liveWebSocket) {
+          try { liveWebSocket.close(); } catch (_) {}
+          liveWebSocket = null;
+        }
       }
     });
   });
@@ -1048,7 +1074,7 @@ function getTotalLapsForCircuit(name) {
 
 let sessionCountdownInterval = null;
 
-function updateSessionProgressBadge(sessionType, currentLap, totalLaps, endTime, isVisible = true) {
+function updateSessionProgressBadge(sessionType, currentLap, totalLaps, endTime, isVisible = true, isEstimated = false) {
   const badge = document.getElementById('session-progress-badge');
   const typeEl = document.getElementById('progress-type');
   const valEl = document.getElementById('progress-val');
@@ -1101,105 +1127,420 @@ function updateSessionProgressBadge(sessionType, currentLap, totalLaps, endTime,
     badge.style.display = 'inline-flex';
     typeEl.style.display = 'inline';
     typeEl.textContent = 'LAP';
-    valEl.textContent = `${currentLap}/${totalLaps || 55}`;
+    valEl.textContent = `${isEstimated ? "~" : ""}${currentLap}/${totalLaps || 55}`;
+    if (isEstimated) {
+      badge.title = `Estimated Live Lap ~${currentLap} of ${totalLaps || 55} (OpenF1 free stream is locked during live sessions)`;
+    } else {
+      badge.title = "Session Progress";
+    }
   }
 }
 
-let currentTimingMode = 'interval'; // 'interval' | 'leader'
+let currentTimingMode = "interval"; // "interval" | "leader"
 let cachedLiveTelemetry = null;
+let liveWebSocket = null;
+let isConnectingSignalR = false;
+let liveSignalRState = {
+  driverList: {},
+  timingData: { Lines: {} },
+  timingAppData: { Lines: {} },
+  trackStatus: { Status: "1", Message: "AllClear" },
+  sessionInfo: null
+};
 
+function deepMerge(target, source) {
+  if (!source || typeof source !== "object") return target;
+  for (const key of Object.keys(source)) {
+    if (source[key] instanceof Object && !Array.isArray(source[key])) {
+      if (!target[key] || typeof target[key] !== "object") target[key] = {};
+      deepMerge(target[key], source[key]);
+    } else {
+      target[key] = source[key];
+    }
+  }
+  return target;
+}
 
 function renderLiveTimingTower() {
   if (!cachedLiveTelemetry) return;
   const { sortedDrivers, driverMap, tyreMap, latestLaps, fastestLap, sessionProgress } = cachedLiveTelemetry;
-  const tower = document.getElementById('timing-tower-list');
-  const badge = document.getElementById('session-progress-badge');
+  const tower = document.getElementById("timing-tower-list");
+  const badge = document.getElementById("session-progress-badge");
+  const banner = document.getElementById("live-broadcast-banner");
+  const bannerTitle = document.getElementById("live-banner-title");
+  const bannerStatus = document.getElementById("live-banner-status");
 
-  const gapHeader = document.getElementById('col-gap-header');
+  const gapHeader = document.getElementById("col-gap-header");
   if (gapHeader) {
-    gapHeader.textContent = currentTimingMode === 'interval' ? 'INTERVAL' : 'LEADER';
+    gapHeader.textContent = currentTimingMode === "interval" ? "INTERVAL" : "LEADER";
+  }
+
+  // Update live broadcast banner
+  if (sessionProgress && sessionProgress.isLive) {
+    if (banner) {
+      banner.style.display = "flex";
+      const race = (allRaces && allRaces.length > 0) ? allRaces[actualNextRaceIndex] : null;
+      const cleanName = race ? `${race.raceName.replace(/grand prix/gi, "").trim()} Grand Prix` : "Grand Prix";
+      if (bannerTitle) bannerTitle.textContent = cleanName;
+      if (bannerStatus) {
+        if (sessionProgress.sessionType === "race") {
+          const estTag = sessionProgress.isOpenF1Restricted ? " (Est.)" : "";
+          const lapPart = (sessionProgress.currentLap && sessionProgress.totalLaps)
+            ? ` • Lap ~${sessionProgress.currentLap} of ${sessionProgress.totalLaps}${estTag}`
+            : "";
+          bannerStatus.textContent = `Race Underway${lapPart} • Live Stream`;
+        } else {
+          bannerStatus.textContent = `${(sessionProgress.sessionType || "Session").toUpperCase()} Underway • Live Stream`;
+        }
+      }
+    }
+    updateSessionProgressBadge(
+      sessionProgress.sessionType,
+      sessionProgress.currentLap,
+      sessionProgress.totalLaps,
+      sessionProgress.endTime,
+      true,
+      sessionProgress.isOpenF1Restricted
+    );
+  } else {
+    if (banner) banner.style.display = "none";
+    updateSessionProgressBadge(null, null, null, null, false);
   }
 
   if (!sortedDrivers || sortedDrivers.length === 0) {
     setSafeContent(tower, '<div class="loading-state">No live session active currently. Telemetry streams live during race weekends.</div>');
-    if (badge) badge.style.display = 'none';
     return;
   }
 
-  if (sessionProgress && sessionProgress.sessionType && sessionProgress.isLive) {
-    updateSessionProgressBadge(sessionProgress.sessionType, sessionProgress.currentLap, sessionProgress.totalLaps, sessionProgress.endTime, true);
-  } else {
-    updateSessionProgressBadge(null, null, null, null, false);
-  }
-
-  setSafeContent(tower, sortedDrivers.slice(0, 10).map((item, idx) => {
+  const rowsHtml = sortedDrivers.slice(0, 22).map((item, idx) => {
     const pos = item.position || (idx + 1);
     const drv = getDriverMeta(item.driver_number, driverMap);
     const num = item.driver_number;
-    const tyre = tyreMap[num] || tyreMap[String(num)] || FALLBACK_TYRE_DATA[num] || { compound: 'medium', laps: 30 };
+    const tyre = tyreMap[num] || tyreMap[String(num)] || FALLBACK_TYRE_DATA[num] || { compound: "medium", laps: 30 };
     const lastLap = latestLaps[num] || latestLaps[String(num)] || FALLBACK_LAP_TIMES[num];
     const activeFastestLap = fastestLap || FALLBACK_FASTEST_LAP;
     const isFastestLap = activeFastestLap && String(activeFastestLap.driverNumber) === String(num);
     const lastLapStr = lastLap && lastLap.lap_duration
-      ? `${Math.floor(lastLap.lap_duration / 60)}:${(lastLap.lap_duration % 60).toFixed(3).padStart(6, '0')}`
-      : '—';
+      ? `${Math.floor(lastLap.lap_duration / 60)}:${(lastLap.lap_duration % 60).toFixed(3).padStart(6, "0")}`
+      : (item.qTime || (item.inPit ? "IN PIT" : (item.retired ? "OUT" : "—")));
 
-    let gapStr = '—';
+    let gapStr = "—";
     if (idx === 0) {
-      gapStr = 'LEADER';
-    } else if (currentTimingMode === 'interval') {
+      gapStr = "LEADER";
+    } else if (currentTimingMode === "interval") {
       // Green Column: Interval to car directly ahead
       const prev = sortedDrivers[idx - 1];
-      if (typeof item.interval === 'number') {
+      if (typeof item.interval === "number") {
         gapStr = `+${item.interval.toFixed(3)}s`;
-      } else if (typeof item.gap_to_leader === 'number' && typeof prev?.gap_to_leader === 'number') {
+      } else if (typeof item.gap_to_leader === "number" && typeof prev?.gap_to_leader === "number") {
         const delta = item.gap_to_leader - prev.gap_to_leader;
-        gapStr = delta > 0 ? `+${delta.toFixed(3)}s` : '—';
-      } else if (typeof item.gap_to_leader === 'string') {
+        gapStr = delta > 0 ? `+${delta.toFixed(3)}s` : "—";
+      } else if (typeof item.interval === "string") {
+        gapStr = item.interval;
+      } else if (typeof item.gap_to_leader === "string") {
         gapStr = item.gap_to_leader;
       }
     } else {
       // Red Column: Cumulative gap to race leader
-      if (typeof item.gap_to_leader === 'number') {
+      if (typeof item.gap_to_leader === "number") {
         gapStr = `+${item.gap_to_leader.toFixed(3)}s`;
-      } else if (typeof item.gap_to_leader === 'string') {
-        gapStr = item.gap_to_leader.startsWith('+') ? item.gap_to_leader : `+${item.gap_to_leader}`;
+      } else if (typeof item.gap_to_leader === "string") {
+        gapStr = item.gap_to_leader.startsWith("+") ? item.gap_to_leader : `+${item.gap_to_leader}`;
       }
     }
 
-    const tyreLetter = (tyre.compound || 'M').charAt(0).toUpperCase();
-    const tyreLapsStr = tyre.laps ? `${tyre.laps}L` : '—';
+    const tyreLetter = (tyre.compound || "M").charAt(0).toUpperCase();
+    const tyreLapsStr = tyre.laps ? `${tyre.laps}L` : "—";
 
     return `
-      <div class="timing-row" ${isFastestLap ? 'title="Fastest lap of the session"' : ''}>
-        <span class="timing-pos">${String(pos).padStart(2, '0')}</span>
+      <div class="timing-row" ${isFastestLap ? 'title="Fastest lap of the session"' : ""}>
+        <span class="timing-pos">${String(pos).padStart(2, "0")}</span>
         <div class="timing-driver-box">
           <span class="timing-team-dot" style="background-color: ${drv.color};"></span>
           <span class="timing-driver-code">${drv.code}</span>
-          ${isFastestLap ? `<span class="fastest-lap-badge" title="Fastest Lap (${activeFastestLap.formatted})">${FASTEST_LAP_SVG}</span>` : ''}
+          ${isFastestLap ? `<span class="fastest-lap-badge" title="Fastest Lap (${activeFastestLap.formatted})">${FASTEST_LAP_SVG}</span>` : ""}
         </div>
-        <span class="timing-last-lap ${isFastestLap ? 'is-fastest' : ''}">${isFastestLap ? activeFastestLap.formatted : lastLapStr}</span>
+        <span class="timing-last-lap ${isFastestLap ? "is-fastest" : ""}">${isFastestLap ? activeFastestLap.formatted : lastLapStr}</span>
         <span class="timing-gap">${gapStr}</span>
         <div class="timing-tyre">
-          <span class="tyre-compound ${tyre.compound || 'medium'}">${tyreLetter}</span>
+          <span class="tyre-compound ${tyre.compound || "medium"}">${tyreLetter}</span>
           <span class="tyre-laps">${tyreLapsStr}</span>
         </div>
       </div>
     `;
-  }).join(''));
+  }).join("");
+
+  const noteHtml = sessionProgress?.isOpenF1Restricted
+    ? '<div class="timing-provider-note">OpenF1 live telemetry is restricted by provider during live sessions. Showing starting grid &amp; estimated lap progress.</div>'
+    : (sessionProgress?.isSignalR
+        ? '<div class="timing-provider-note" style="color: #27F4D2;">⚡ Connected to Formula 1 Official Live Timing Stream</div>'
+        : "");
+
+  setSafeContent(tower, rowsHtml + noteHtml);
+}
+
+function processF1SignalRState() {
+  const { driverList, timingData, timingAppData, trackStatus, sessionInfo } = liveSignalRState;
+  const lines = timingData?.Lines || {};
+  const appLines = timingAppData?.Lines || {};
+
+  if (Object.keys(lines).length === 0) return;
+
+  const driverMap = {};
+  Object.entries(driverList || {}).forEach(([numStr, d]) => {
+    const num = parseInt(numStr, 10);
+    driverMap[num] = {
+      code: d.Tla || `#${num}`,
+      name: d.BroadcastName || d.FullName || `${d.FirstName || ""} ${d.LastName || ""}`.trim() || `Driver ${num}`,
+      color: d.TeamColour ? `#${d.TeamColour}` : (getTeamColor(d.TeamName) || "#888")
+    };
+  });
+
+  const tyreMap = {};
+  Object.entries(appLines).forEach(([numStr, d]) => {
+    const num = parseInt(numStr, 10);
+    const stints = d.Stints || [];
+    const latest = stints.length > 0 ? stints[stints.length - 1] : null;
+    if (latest) {
+      tyreMap[num] = {
+        compound: (latest.Compound || "medium").toLowerCase(),
+        laps: latest.TotalLaps || 1
+      };
+    }
+  });
+
+  const latestLaps = {};
+  let fastestLap = null;
+  let bestTimeSec = 9999;
+
+  Object.entries(lines).forEach(([numStr, line]) => {
+    const num = parseInt(numStr, 10);
+    const lastVal = line.LastLapTime?.Value;
+    if (lastVal && typeof lastVal === "string" && lastVal.includes(":")) {
+      const [m, s] = lastVal.split(":");
+      const dur = parseFloat(m) * 60 + parseFloat(s);
+      if (!isNaN(dur)) {
+        latestLaps[num] = { lap_duration: dur };
+      }
+    }
+
+    if (line.LastLapTime?.OverallFastest && line.LastLapTime?.Value) {
+      fastestLap = { driverNumber: num, formatted: line.LastLapTime.Value };
+    } else if (line.BestLapTime?.Value && !fastestLap) {
+      const [bm, bs] = line.BestLapTime.Value.split(":");
+      const bDur = parseFloat(bm) * 60 + parseFloat(bs);
+      if (!isNaN(bDur) && bDur < bestTimeSec) {
+        bestTimeSec = bDur;
+        fastestLap = { driverNumber: num, formatted: line.BestLapTime.Value };
+      }
+    }
+  });
+
+  const sortedDrivers = Object.entries(lines)
+    .map(([numStr, line]) => {
+      const num = parseInt(numStr, 10);
+      const pos = parseInt(line.Position || 99, 10);
+      return {
+        driver_number: num,
+        position: pos,
+        gap_to_leader: line.GapToLeader || (pos === 1 ? "LEADER" : "—"),
+        interval: line.IntervalToPositionAhead?.Value || (pos === 1 ? "LEADER" : "—"),
+        inPit: Boolean(line.InPit),
+        retired: Boolean(line.Retired || line.Stopped)
+      };
+    })
+    .filter(d => !isNaN(d.position) && d.position < 90)
+    .sort((a, b) => a.position - b.position);
+
+  // Update track status indicator
+  const statusPill = document.getElementById("track-status-pill");
+  const statusLabel = document.getElementById("track-status-label");
+  if (statusPill && statusLabel) {
+    const st = String(trackStatus?.Status || "1");
+    if (st === "5") {
+      statusPill.className = "nitrous-status-pill status-red";
+      statusLabel.textContent = "Red Flag";
+    } else if (st === "4") {
+      statusPill.className = "nitrous-status-pill status-yellow";
+      statusLabel.textContent = "Safety Car";
+    } else if (st === "6") {
+      statusPill.className = "nitrous-status-pill status-yellow";
+      statusLabel.textContent = "VSC";
+    } else if (st === "2") {
+      statusPill.className = "nitrous-status-pill status-yellow";
+      statusLabel.textContent = "Yellow";
+    } else {
+      statusPill.className = "nitrous-status-pill status-green";
+      statusLabel.textContent = "Clear";
+    }
+  }
+
+  // Lap progress
+  let currentLap = 0;
+  Object.values(lines).forEach(l => {
+    if (typeof l.NumberOfLaps === "number" && l.NumberOfLaps > currentLap) {
+      currentLap = l.NumberOfLaps;
+    }
+  });
+
+  const circuitName = sessionInfo?.Meeting?.Circuit?.ShortName || sessionInfo?.Meeting?.Name || "singapore";
+  const sessionType = (sessionInfo?.Type || "Race").toLowerCase();
+  let totalLaps = getTotalLapsForCircuit(circuitName);
+  if (sessionType.includes("sprint")) {
+    totalLaps = Math.max(15, Math.round(totalLaps / 3));
+  }
+
+  const now = Date.now();
+  let scheduledRace = (allRaces && allRaces.length > 0) ? allRaces[actualNextRaceIndex] : null;
+  let scheduledActiveSession = null;
+  if (scheduledRace) {
+    const raceSessions = extractRaceSessions(scheduledRace);
+    scheduledActiveSession = raceSessions.find(s => {
+      const dur = SESSION_DURATIONS[s.type] || (60 * 60 * 1000);
+      return now >= s.t && now < (s.t + dur);
+    }) || null;
+  }
+
+  const isLive = Boolean(scheduledActiveSession) || (sessionInfo?.SessionStatus !== "Finalised");
+
+  const sessionProgress = {
+    sessionType,
+    currentLap,
+    totalLaps,
+    endTime: scheduledActiveSession ? (scheduledActiveSession.t + (SESSION_DURATIONS[scheduledActiveSession.type] || 3600000)) : null,
+    isLive,
+    isSignalR: true
+  };
+
+  updateLiveBeaconState(isLive);
+  updateSessionProgressBadge(sessionType, currentLap, totalLaps, sessionProgress.endTime, isLive, false);
+
+  cachedLiveTelemetry = {
+    sortedDrivers,
+    driverMap,
+    tyreMap,
+    latestLaps,
+    fastestLap,
+    sessionProgress
+  };
+
+  try {
+    localStorage.setItem("f1_cached_telemetry", JSON.stringify(cachedLiveTelemetry));
+  } catch (_) {}
+
+  renderLiveTimingTower();
+}
+
+async function connectF1LiveTiming() {
+  if (liveWebSocket && (liveWebSocket.readyState === WebSocket.OPEN || liveWebSocket.readyState === WebSocket.CONNECTING)) {
+    return true;
+  }
+  if (isConnectingSignalR) return false;
+  isConnectingSignalR = true;
+
+  try {
+    const negRes = await fetch("https://livetiming.formula1.com/signalrcore/negotiate?negotiateVersion=1", {
+      method: "POST",
+      headers: { "User-Agent": "Mozilla/5.0" }
+    });
+    if (!negRes.ok) throw new Error(`Negotiate failed: ${negRes.status}`);
+    const negData = await negRes.json();
+    if (!negData.connectionToken) throw new Error("Missing connectionToken");
+
+    const wsUrl = `wss://livetiming.formula1.com/signalrcore?id=${encodeURIComponent(negData.connectionToken)}`;
+    const ws = new WebSocket(wsUrl);
+    liveWebSocket = ws;
+
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ protocol: "json", version: 1 }) + "\x1e");
+    };
+
+    ws.onmessage = (event) => {
+      const raw = String(event.data);
+      if (raw.includes("{}\x1e") || raw === "{}\x1e") {
+        const subMsg = {
+          type: 1,
+          invocationId: "0",
+          target: "Subscribe",
+          arguments: [["Heartbeat", "SessionInfo", "SessionData", "DriverList", "TimingData", "TimingAppData", "TrackStatus"]]
+        };
+        ws.send(JSON.stringify(subMsg) + "\x1e");
+        return;
+      }
+
+      const records = raw.split("\x1e").filter(Boolean);
+      for (const r of records) {
+        try {
+          const msg = JSON.parse(r);
+          if (msg.type === 3 && msg.result) {
+            const res = msg.result;
+            if (res.DriverList) liveSignalRState.driverList = res.DriverList;
+            if (res.TimingData?.Lines) liveSignalRState.timingData.Lines = res.TimingData.Lines;
+            if (res.TimingAppData?.Lines) liveSignalRState.timingAppData.Lines = res.TimingAppData.Lines;
+            if (res.TrackStatus) liveSignalRState.trackStatus = res.TrackStatus;
+            if (res.SessionInfo) liveSignalRState.sessionInfo = res.SessionInfo;
+            processF1SignalRState();
+          } else if (msg.type === 1 && msg.target === "feed" && Array.isArray(msg.arguments)) {
+            const [topic, delta] = msg.arguments;
+            if (topic === "TimingData" && delta?.Lines) {
+              for (const [k, v] of Object.entries(delta.Lines)) {
+                if (!liveSignalRState.timingData.Lines[k]) {
+                  liveSignalRState.timingData.Lines[k] = v;
+                } else {
+                  deepMerge(liveSignalRState.timingData.Lines[k], v);
+                }
+              }
+              processF1SignalRState();
+            } else if (topic === "TimingAppData" && delta?.Lines) {
+              for (const [k, v] of Object.entries(delta.Lines)) {
+                if (!liveSignalRState.timingAppData.Lines[k]) {
+                  liveSignalRState.timingAppData.Lines[k] = v;
+                } else {
+                  deepMerge(liveSignalRState.timingAppData.Lines[k], v);
+                }
+              }
+              processF1SignalRState();
+            } else if (topic === "TrackStatus" && delta) {
+              liveSignalRState.trackStatus = delta;
+              processF1SignalRState();
+            } else if (topic === "SessionInfo" && delta) {
+              deepMerge(liveSignalRState.sessionInfo, delta);
+              processF1SignalRState();
+            }
+          }
+        } catch (_) {}
+      }
+    };
+
+    ws.onerror = (e) => {
+      console.warn("[F1 Live] SignalR WebSocket error:", e);
+    };
+
+    ws.onclose = () => {
+      if (liveWebSocket === ws) liveWebSocket = null;
+    };
+
+    isConnectingSignalR = false;
+    return true;
+  } catch (err) {
+    console.warn("[F1 Live] SignalR connection error:", err);
+    isConnectingSignalR = false;
+    liveWebSocket = null;
+    return false;
+  }
 }
 
 async function loadLiveTelemetry() {
-  const tower = document.getElementById('timing-tower-list');
-  const statusPill = document.getElementById('track-status-pill');
-  const statusLabel = document.getElementById('track-status-label');
+  const tower = document.getElementById("timing-tower-list");
+  const statusPill = document.getElementById("track-status-pill");
+  const statusLabel = document.getElementById("track-status-label");
 
   // Instant render from memory or localStorage cache so Live tab opens with zero lag
   if (cachedLiveTelemetry) {
     renderLiveTimingTower();
   } else {
     try {
-      const cached = localStorage.getItem('f1_cached_telemetry');
+      const cached = localStorage.getItem("f1_cached_telemetry");
       if (cached) {
         cachedLiveTelemetry = JSON.parse(cached);
         renderLiveTimingTower();
@@ -1207,34 +1548,81 @@ async function loadLiveTelemetry() {
     } catch (_) {}
   }
 
+  // 1. Primary Live Feed: Connect to Formula 1 Official SignalR Stream
+  const connectedSignalR = await connectF1LiveTiming();
+  if (connectedSignalR) {
+    return;
+  }
+
+  // 2. Secondary Fallback: OpenF1 / Qualifying Starting Grid
   try {
+    // Ensure schedule is loaded
+    if (!allRaces || allRaces.length === 0) {
+      try {
+        const res = await fetch(`https://f1.trionine.com/api/current.json?_t=${Date.now()}`);
+        if (res.ok) {
+          const data = await res.json();
+          allRaces = data?.MRData?.RaceTable?.Races || [];
+          findNextRaceIndex();
+        }
+      } catch (_) {}
+    }
+
+    const now = Date.now();
+    let scheduledActiveSession = null;
+    let scheduledRace = (allRaces && allRaces.length > 0) ? allRaces[actualNextRaceIndex] : null;
+
+    if (scheduledRace) {
+      const raceSessions = extractRaceSessions(scheduledRace);
+      scheduledActiveSession = raceSessions.find(s => {
+        const dur = SESSION_DURATIONS[s.type] || (60 * 60 * 1000);
+        return now >= s.t && now < (s.t + dur);
+      }) || null;
+    }
+
     // 1. Primary Batch: Race control status, Driver metadata, Session results & Session metadata
     const [rcRes, drvRes, resRes, sessRes] = await Promise.all([
-      fetch('https://api.openf1.org/v1/race_control?session_key=latest').catch(() => null),
-      fetch('https://api.openf1.org/v1/drivers?session_key=latest').catch(() => null),
-      fetch('https://api.openf1.org/v1/session_result?session_key=latest').catch(() => null),
-      fetch('https://api.openf1.org/v1/sessions?session_key=latest').catch(() => null)
+      fetch("https://api.openf1.org/v1/race_control?session_key=latest").catch(() => null),
+      fetch("https://api.openf1.org/v1/drivers?session_key=latest").catch(() => null),
+      fetch("https://api.openf1.org/v1/session_result?session_key=latest").catch(() => null),
+      fetch("https://api.openf1.org/v1/sessions?session_key=latest").catch(() => null)
     ]);
+
+    const isOpenF1Restricted = Boolean(
+      sessRes?.status === 401 ||
+      rcRes?.status === 401 ||
+      drvRes?.status === 401 ||
+      resRes?.status === 401
+    );
 
     const sessData = (sessRes && sessRes.ok) ? await sessRes.json().catch(() => []) : [];
     const openF1Session = Array.isArray(sessData) && sessData.length > 0 ? sessData[0] : null;
+
+    const isSessionTrulyLive = Boolean(scheduledActiveSession) || Boolean(isOpenF1Restricted) || Boolean(
+      openF1Session && openF1Session.date_start && openF1Session.date_end &&
+      now >= new Date(openF1Session.date_start).getTime() &&
+      now <= new Date(openF1Session.date_end).getTime()
+    );
 
     // Update track status indicator
     if (rcRes && rcRes.ok) {
       const rcData = await rcRes.json().catch(() => []);
       if (Array.isArray(rcData) && rcData.length > 0 && statusPill && statusLabel) {
         const latestMsg = rcData[rcData.length - 1];
-        if (latestMsg.flag === 'RED') {
-          statusPill.className = 'nitrous-status-pill status-red';
-          statusLabel.textContent = 'Red Flag';
-        } else if (latestMsg.category === 'SafetyCar' || latestMsg.flag === 'YELLOW') {
-          statusPill.className = 'nitrous-status-pill status-yellow';
-          statusLabel.textContent = latestMsg.category === 'SafetyCar' ? 'Safety Car' : 'Yellow';
+        if (latestMsg.flag === "RED") {
+          statusPill.className = "nitrous-status-pill status-red";
+          statusLabel.textContent = "Red Flag";
+        } else if (latestMsg.category === "SafetyCar" || latestMsg.flag === "YELLOW") {
+          statusPill.className = "nitrous-status-pill status-yellow";
+          statusLabel.textContent = latestMsg.category === "SafetyCar" ? "Safety Car" : "Yellow";
         } else {
-          statusPill.className = 'nitrous-status-pill status-green';
-          statusLabel.textContent = 'Clear';
+          statusPill.className = "nitrous-status-pill status-green";
+          statusLabel.textContent = "Clear";
         }
       }
+    } else if (isSessionTrulyLive && statusPill && statusLabel) {
+      statusPill.className = "nitrous-status-pill status-green";
+      statusLabel.textContent = "Clear";
     }
 
     const drvData = (drvRes && drvRes.ok) ? await drvRes.json().catch(() => []) : [];
@@ -1246,20 +1634,23 @@ async function loadLiveTelemetry() {
         const num = d.driver_number;
         driverMap[num] = {
           code: d.name_acronym || `#${num}`,
-          name: d.full_name || `${d.first_name || ''} ${d.last_name || ''}`.trim(),
+          name: d.full_name || `${d.first_name || ""} ${d.last_name || ""}`.trim(),
           color: d.team_colour ? `#${d.team_colour}` : getTeamColor(d.team_name)
         };
       });
     }
 
-    // 2. Secondary Batch: Tyres (stints) & Lap times
-    const [stintRes, lapsRes] = await Promise.all([
-      fetch('https://api.openf1.org/v1/stints?session_key=latest').catch(() => null),
-      fetch('https://api.openf1.org/v1/laps?session_key=latest').catch(() => null)
-    ]);
-
-    const stintData = (stintRes && stintRes.ok) ? await stintRes.json().catch(() => []) : [];
-    const lapsData = (lapsRes && lapsRes.ok) ? await lapsRes.json().catch(() => []) : [];
+    // 2. Secondary Batch: Tyres (stints) & Lap times (only fetch if OpenF1 is not restricted)
+    let stintData = [];
+    let lapsData = [];
+    if (!isOpenF1Restricted) {
+      const [stintRes, lapsRes] = await Promise.all([
+        fetch("https://api.openf1.org/v1/stints?session_key=latest").catch(() => null),
+        fetch("https://api.openf1.org/v1/laps?session_key=latest").catch(() => null)
+      ]);
+      stintData = (stintRes && stintRes.ok) ? await stintRes.json().catch(() => []) : [];
+      lapsData = (lapsRes && lapsRes.ok) ? await lapsRes.json().catch(() => []) : [];
+    }
 
     let tyreMap = {};
     if (Array.isArray(stintData) && stintData.length > 0) {
@@ -1289,18 +1680,17 @@ async function loadLiveTelemetry() {
         const currentAge = Math.max(1, (lapEnd - lapStart + 1) + ageAtStart);
 
         tyreMap[num] = {
-          compound: (s.compound || 'MEDIUM').toLowerCase(),
+          compound: (s.compound || "MEDIUM").toLowerCase(),
           laps: currentAge
         };
       });
 
       try {
-        localStorage.setItem('f1_cached_tyres', JSON.stringify(tyreMap));
+        localStorage.setItem("f1_cached_tyres", JSON.stringify(tyreMap));
       } catch (_) {}
     } else {
-      // Load from localStorage or static fallback if network was throttled
       try {
-        const cached = localStorage.getItem('f1_cached_tyres');
+        const cached = localStorage.getItem("f1_cached_tyres");
         if (cached) tyreMap = JSON.parse(cached);
       } catch (_) {}
       if (Object.keys(tyreMap).length === 0) {
@@ -1308,17 +1698,16 @@ async function loadLiveTelemetry() {
       }
     }
 
-    // Keep the latest completed lap for every driver, then identify the session's fastest lap
     let latestLaps = {};
     let fastestLap = null;
     if (Array.isArray(lapsData) && lapsData.length > 0) {
-      const validLaps = lapsData.filter(l => typeof l.lap_duration === 'number' && l.lap_duration > 50);
+      const validLaps = lapsData.filter(l => typeof l.lap_duration === "number" && l.lap_duration > 50);
 
       validLaps.forEach(lap => {
         const driverNumber = lap.driver_number;
-        const lapDate = lap.date_start || lap.date || '';
+        const lapDate = lap.date_start || lap.date || "";
         const existing = latestLaps[driverNumber];
-        const existingDate = existing?.date_start || existing?.date || '';
+        const existingDate = existing?.date_start || existing?.date || "";
 
         if (!existing || lapDate > existingDate) {
           latestLaps[driverNumber] = lap;
@@ -1328,18 +1717,17 @@ async function loadLiveTelemetry() {
       if (validLaps.length > 0) {
         const best = validLaps.reduce((min, cur) => cur.lap_duration < min.lap_duration ? cur : min, validLaps[0]);
         const mins = Math.floor(best.lap_duration / 60);
-        const secs = (best.lap_duration % 60).toFixed(3).padStart(6, '0');
+        const secs = (best.lap_duration % 60).toFixed(3).padStart(6, "0");
         const formatted = `${mins}:${secs}`;
         fastestLap = { driverNumber: best.driver_number, formatted };
       }
 
       try {
-        localStorage.setItem('f1_cached_laps', JSON.stringify({ latestLaps, fastestLap }));
+        localStorage.setItem("f1_cached_laps", JSON.stringify({ latestLaps, fastestLap }));
       } catch (_) {}
     } else {
-      // Load from localStorage or static fallback if network was throttled
       try {
-        const cached = localStorage.getItem('f1_cached_laps');
+        const cached = localStorage.getItem("f1_cached_laps");
         if (cached) {
           const parsed = JSON.parse(cached);
           latestLaps = parsed.latestLaps || {};
@@ -1367,11 +1755,11 @@ async function loadLiveTelemetry() {
         }
       });
       sortedDrivers.sort((a, b) => a.position - b.position);
-    } else {
+    } else if (!isOpenF1Restricted) {
       // Active Live session: fetch real-time position feeds
       const [posRes, intRes] = await Promise.all([
-        fetch('https://api.openf1.org/v1/position?session_key=latest').catch(() => null),
-        fetch('https://api.openf1.org/v1/intervals?session_key=latest').catch(() => null)
+        fetch("https://api.openf1.org/v1/position?session_key=latest").catch(() => null),
+        fetch("https://api.openf1.org/v1/intervals?session_key=latest").catch(() => null)
       ]);
 
       const posData = (posRes && posRes.ok) ? await posRes.json().catch(() => []) : [];
@@ -1408,10 +1796,9 @@ async function loadLiveTelemetry() {
         });
         sortedDrivers.sort((a, b) => a.position - b.position);
       } else if (Object.keys(latestIntervals).length > 0) {
-        // Fallback: sort intervals by gap_to_leader FIRST, then assign sequential position
         const sortedIntervals = Object.values(latestIntervals).sort((a, b) => {
-          const gapA = typeof a.gap_to_leader === 'number' ? a.gap_to_leader : 9999;
-          const gapB = typeof b.gap_to_leader === 'number' ? b.gap_to_leader : 9999;
+          const gapA = typeof a.gap_to_leader === "number" ? a.gap_to_leader : 9999;
+          const gapB = typeof b.gap_to_leader === "number" ? b.gap_to_leader : 9999;
           return gapA - gapB;
         });
         sortedDrivers = sortedIntervals.map((item, idx) => ({
@@ -1423,20 +1810,7 @@ async function loadLiveTelemetry() {
       }
     }
 
-    // Determine active session progress (Lap count or Remaining Time)
-    const now = Date.now();
-    let scheduledActiveSession = null;
-    let scheduledRace = (allRaces && allRaces.length > 0) ? allRaces[actualNextRaceIndex] : null;
-
-    if (scheduledRace) {
-      const raceSessions = extractRaceSessions(scheduledRace);
-      scheduledActiveSession = raceSessions.find(s => {
-        const dur = SESSION_DURATIONS[s.type] || (60 * 60 * 1000);
-        return now >= s.t && now < (s.t + dur);
-      }) || null;
-    }
-
-    let sessionType = 'race';
+    let sessionType = "race";
     let endTime = null;
 
     if (scheduledActiveSession) {
@@ -1444,11 +1818,11 @@ async function loadLiveTelemetry() {
       const dur = SESSION_DURATIONS[scheduledActiveSession.type] || (60 * 60 * 1000);
       endTime = scheduledActiveSession.t + dur;
     } else if (openF1Session) {
-      const openF1Type = (openF1Session.session_type || openF1Session.session_name || 'Race').toLowerCase();
-      if (openF1Type.includes('sprint')) sessionType = 'sprint';
-      else if (openF1Type.includes('quali')) sessionType = 'quali';
-      else if (openF1Type.includes('practice') || openF1Type.includes('fp')) sessionType = 'practice';
-      else sessionType = 'race';
+      const openF1Type = (openF1Session.session_type || openF1Session.session_name || "Race").toLowerCase();
+      if (openF1Type.includes("sprint")) sessionType = "sprint";
+      else if (openF1Type.includes("quali")) sessionType = "quali";
+      else if (openF1Type.includes("practice") || openF1Type.includes("fp")) sessionType = "practice";
+      else sessionType = "race";
 
       if (openF1Session.date_end) {
         const parsedEnd = new Date(openF1Session.date_end).getTime();
@@ -1456,23 +1830,23 @@ async function loadLiveTelemetry() {
       }
     }
 
-    const circuitName = openF1Session?.circuit_short_name || scheduledRace?.raceName || scheduledRace?.Circuit?.circuitName || 'singapore';
+    const circuitName = openF1Session?.circuit_short_name || scheduledRace?.raceName || scheduledRace?.Circuit?.circuitName || "singapore";
     let totalLaps = getTotalLapsForCircuit(circuitName);
-    if (sessionType === 'sprint') {
+    if (sessionType === "sprint") {
       totalLaps = Math.max(15, Math.round(totalLaps / 3));
     }
 
     let maxLap = 0;
     if (Array.isArray(lapsData) && lapsData.length > 0) {
       lapsData.forEach(l => {
-        if (typeof l.lap_number === 'number' && l.lap_number > maxLap) {
+        if (typeof l.lap_number === "number" && l.lap_number > maxLap) {
           maxLap = l.lap_number;
         }
       });
     }
     if (Array.isArray(stintData) && stintData.length > 0) {
       stintData.forEach(s => {
-        if (typeof s.lap_end === 'number' && s.lap_end > maxLap) {
+        if (typeof s.lap_end === "number" && s.lap_end > maxLap) {
           maxLap = s.lap_end;
         }
       });
@@ -1483,24 +1857,143 @@ async function loadLiveTelemetry() {
       const leaderNum = sortedDrivers[0].driver_number;
       currentLap = tyreMap[leaderNum]?.laps || 1;
     }
-    if (currentLap > totalLaps) currentLap = totalLaps;
 
-    const isSessionTrulyLive = Boolean(scheduledActiveSession) || Boolean(
-      openF1Session && openF1Session.date_start && openF1Session.date_end &&
-      now >= new Date(openF1Session.date_start).getTime() &&
-      now <= new Date(openF1Session.date_end).getTime()
-    );
+    // ------------------------------------------------------------------
+    // LIVE SESSION FALLBACK: If session is live but OpenF1 returned no drivers / 401
+    // ------------------------------------------------------------------
+    let usedOpenF1Fallback = false;
+    if (isSessionTrulyLive && sortedDrivers.length === 0) {
+      usedOpenF1Fallback = true;
+
+      if (!latestQualifyingData) {
+        try {
+          const qRes = await fetch(`https://f1.trionine.com/api/qualifying.json?_t=${Date.now()}`);
+          if (qRes.ok) {
+            const qData = await qRes.json();
+            const qualis = qData?.MRData?.RaceTable?.Races || [];
+            latestQualifyingData = qualis.length > 0 ? qualis[qualis.length - 1] : null;
+          }
+        } catch (_) {}
+      }
+
+      const parseTime = (str) => {
+        if (!str || typeof str !== "string" || !str.includes(":")) return null;
+        const [m, s] = str.split(":");
+        return parseFloat(m) * 60 + parseFloat(s);
+      };
+
+      if (latestQualifyingData?.QualifyingResults && latestQualifyingData.QualifyingResults.length > 0) {
+        const qResults = latestQualifyingData.QualifyingResults;
+        const poleItem = qResults[0];
+        const poleTimeStr = poleItem.Q3 || poleItem.Q2 || poleItem.Q1 || "";
+        const poleSec = parseTime(poleTimeStr);
+        const poleCode = poleItem.Driver?.code || "";
+        const poleNum = parseInt(poleItem.number || poleItem.Driver?.permanentNumber || getDriverNumberFromCode(poleCode) || "12", 10);
+
+        if (poleTimeStr) {
+          fastestLap = { driverNumber: poleNum, formatted: poleTimeStr };
+        }
+
+        // Realistic race lap pace is ~1.08x qualifying pole pace with full fuel (105kg) & race tyres
+        const avgRaceLapSec = poleSec ? (poleSec * 1.08) : 102;
+        if (scheduledActiveSession) {
+          const FORMATION_LAP_MS = 3.5 * 60 * 1000; // ~3.5 min formation lap & grid line-up
+          const elapsedMs = Math.max(0, now - scheduledActiveSession.t);
+          const elapsedRaceMs = Math.max(0, elapsedMs - FORMATION_LAP_MS);
+          currentLap = Math.min(totalLaps, Math.max(1, Math.floor(elapsedRaceMs / (avgRaceLapSec * 1000)) + 1));
+        } else {
+          currentLap = Math.max(1, Math.round(totalLaps * 0.25));
+        }
+
+        sortedDrivers = qResults.map((item, idx) => {
+          const code = item.Driver?.code || "";
+          const matchedNum = getDriverNumberFromCode(code);
+          const num = parseInt(item.number || item.Driver?.permanentNumber || matchedNum || (idx + 1), 10);
+          const fallbackMeta = STATIC_DRIVERS[num] || {};
+          const driverCode = code || fallbackMeta.code || `#${num}`;
+          const name = `${item.Driver?.givenName || ""} ${item.Driver?.familyName || ""}`.trim() || fallbackMeta.name || `Driver ${num}`;
+          const color = getTeamColor(item.Constructor?.name) || fallbackMeta.color || "#888";
+
+          driverMap[num] = { code: driverCode, name, color };
+
+          const bestStr = item.Q3 || item.Q2 || item.Q1;
+          const lapSec = parseTime(bestStr);
+          if (lapSec) {
+            latestLaps[num] = { lap_duration: lapSec };
+          }
+
+          let gapLeader = "—";
+          let intVal = "—";
+          if (idx === 0) {
+            gapLeader = "LEADER";
+            intVal = "LEADER";
+          } else if (lapSec && poleSec && lapSec >= poleSec) {
+            const delta = lapSec - poleSec;
+            gapLeader = delta;
+            const prev = qResults[idx - 1];
+            const prevSec = parseTime(prev.Q3 || prev.Q2 || prev.Q1);
+            if (prevSec && lapSec >= prevSec) {
+              intVal = lapSec - prevSec;
+            } else {
+              intVal = delta;
+            }
+          } else {
+            gapLeader = `+P${idx + 1}`;
+            intVal = `+P${idx + 1}`;
+          }
+
+          tyreMap[num] = {
+            compound: idx % 3 === 2 ? "hard" : (idx % 2 === 0 ? "medium" : "soft"),
+            laps: currentLap
+          };
+
+          return {
+            driver_number: num,
+            position: parseInt(item.position || (idx + 1), 10),
+            gap_to_leader: gapLeader,
+            interval: intVal,
+            qTime: bestStr || ""
+          };
+        });
+      } else {
+        if (scheduledActiveSession) {
+          const FORMATION_LAP_MS = 3.5 * 60 * 1000;
+          const elapsedMs = Math.max(0, now - scheduledActiveSession.t);
+          const elapsedRaceMs = Math.max(0, elapsedMs - FORMATION_LAP_MS);
+          currentLap = Math.min(totalLaps, Math.max(1, Math.floor(elapsedRaceMs / (102 * 1000)) + 1));
+        } else {
+          currentLap = Math.max(1, Math.round(totalLaps * 0.25));
+        }
+
+        let p = 1;
+        for (const [nStr, meta] of Object.entries(STATIC_DRIVERS)) {
+          const n = parseInt(nStr, 10);
+          driverMap[n] = meta;
+          tyreMap[n] = { compound: "medium", laps: currentLap };
+          sortedDrivers.push({
+            driver_number: n,
+            position: p,
+            gap_to_leader: p === 1 ? "LEADER" : `+P${p}`,
+            interval: p === 1 ? "LEADER" : `+P${p}`
+          });
+          p++;
+        }
+      }
+    }
+
+    if (currentLap > totalLaps) currentLap = totalLaps;
 
     const sessionProgress = {
       sessionType,
       currentLap,
       totalLaps,
       endTime,
-      isLive: isSessionTrulyLive
+      isLive: isSessionTrulyLive,
+      isOpenF1Restricted: usedOpenF1Fallback
     };
 
     updateLiveBeaconState(isSessionTrulyLive);
-    updateSessionProgressBadge(sessionType, currentLap, totalLaps, endTime, isSessionTrulyLive);
+    updateSessionProgressBadge(sessionType, currentLap, totalLaps, endTime, isSessionTrulyLive, usedOpenF1Fallback);
 
     cachedLiveTelemetry = {
       sortedDrivers,
@@ -1512,15 +2005,17 @@ async function loadLiveTelemetry() {
     };
 
     try {
-      localStorage.setItem('f1_cached_telemetry', JSON.stringify(cachedLiveTelemetry));
+      localStorage.setItem("f1_cached_telemetry", JSON.stringify(cachedLiveTelemetry));
     } catch (_) {}
 
     renderLiveTimingTower();
 
   } catch (err) {
     setSafeContent(tower, '<div class="loading-state">Telemetry will stream live during race sessions.</div>');
-    const badge = document.getElementById('session-progress-badge');
-    if (badge) badge.style.display = 'none';
+    const badge = document.getElementById("session-progress-badge");
+    if (badge) badge.style.display = "none";
+    const banner = document.getElementById("live-broadcast-banner");
+    if (banner) banner.style.display = "none";
   }
 }
 
@@ -1806,36 +2301,50 @@ function setupUIEventListeners() {
 let audioTestInstance = null;
 
 function testThemeAudio() {
-  const btnTest = document.getElementById('btn-test-alarm');
-  const btnStop = document.getElementById('btn-stop-alarm');
-  const txt = document.getElementById('test-btn-text');
+  const btnTest = document.getElementById("btn-test-alarm");
+  const btnStop = document.getElementById("btn-stop-alarm");
+  const txt = document.getElementById("test-btn-text");
 
   if (audioTestInstance) {
     stopThemeAudio();
   }
 
   const vol = (currentSettings?.volume !== undefined ? currentSettings.volume : 85) / 100;
-  audioTestInstance = new Audio('assets/f1_theme.mp3');
-  audioTestInstance.volume = vol;
+  const audioSrc = (typeof api !== "undefined" && api?.runtime?.getURL)
+    ? api.runtime.getURL("assets/f1_theme.mp3")
+    : "assets/f1_theme.mp3";
 
-  if (txt) txt.textContent = 'Playing Sound...';
-  if (btnStop) btnStop.style.display = 'inline-flex';
+  audioTestInstance = new Audio(audioSrc);
+  audioTestInstance.volume = Math.max(0, Math.min(1, vol));
 
-  audioTestInstance.play().catch(() => {
-    if (txt) txt.textContent = 'Audio blocked by browser';
-    setTimeout(() => {
-      stopThemeAudio();
-    }, 2000);
-  });
+  if (txt) txt.textContent = "Playing Sound...";
+  if (btnStop) btnStop.style.display = "inline-flex";
 
   audioTestInstance.onended = () => {
     stopThemeAudio();
   };
+
+  audioTestInstance.play().then(() => {
+    if (typeof api !== "undefined" && api?.notifications?.create) {
+      api.notifications.create("f1_test_notification", {
+        type: "basic",
+        iconUrl: api.runtime.getURL("assets/icon128.png"),
+        title: "🏎️ F1 Live Alert: Alarm Test Active!",
+        message: "Lights out in 5 minutes! Playing official F1 Theme.",
+        priority: 2
+      });
+    }
+  }).catch((err) => {
+    console.warn("Popup theme audio blocked, delegating to background:", err);
+    if (typeof api !== "undefined" && api?.runtime?.sendMessage) {
+      api.runtime.sendMessage({ action: "TEST_ALARM", volume: vol }).catch(() => {});
+    }
+  });
 }
 
 function stopThemeAudio() {
-  const btnStop = document.getElementById('btn-stop-alarm');
-  const txt = document.getElementById('test-btn-text');
+  const btnStop = document.getElementById("btn-stop-alarm");
+  const txt = document.getElementById("test-btn-text");
 
   if (audioTestInstance) {
     audioTestInstance.pause();
@@ -1843,8 +2352,12 @@ function stopThemeAudio() {
     audioTestInstance = null;
   }
 
-  if (txt) txt.textContent = 'Test Alarm';
-  if (btnStop) btnStop.style.display = 'none';
+  if (typeof api !== "undefined" && api?.runtime?.sendMessage) {
+    api.runtime.sendMessage({ action: "STOP_ALARM" }).catch(() => {});
+  }
+
+  if (txt) txt.textContent = "Test Alarm";
+  if (btnStop) btnStop.style.display = "none";
 }
 
 // ============================================================
@@ -2054,6 +2567,11 @@ function switchTabFromCode(targetId) {
   activeTab = targetId;
   tabButtons.forEach(b => b.classList.toggle('active', b.getAttribute('data-tab') === targetId));
   tabPanes.forEach(p => p.classList.toggle('active', p.id === targetId));
+
+  if (targetId !== 'tab-live' && liveWebSocket) {
+    try { liveWebSocket.close(); } catch (_) {}
+    liveWebSocket = null;
+  }
 
   if (targetId === 'tab-standings') loadStandings();
   if (targetId === 'tab-results') loadResults();

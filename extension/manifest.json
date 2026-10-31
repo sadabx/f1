@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "F1 Dash",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Never miss lights out. Live F1 countdowns, weekend schedules in your local time, and pre-session theme music alerts.",
   "browser_specific_settings": {
     "gecko": {
@@ -39,6 +39,7 @@
   ],
   "host_permissions": [
     "https://f1.trionine.com/*",
-    "https://api.openf1.org/*"
+    "https://api.openf1.org/*",
+    "https://livetiming.formula1.com/*"
   ]
 }
