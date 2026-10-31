@@ -1208,7 +1208,12 @@ function renderLiveTimingTower() {
   }
 
   if (!sortedDrivers || sortedDrivers.length === 0) {
-    setSafeContent(tower, '<div class="loading-state">No live session active currently. Telemetry streams live during race weekends.</div>');
+    if (sessionProgress && sessionProgress.isLive) {
+      const sName = (sessionProgress.sessionType || "Practice").toUpperCase();
+      setSafeContent(tower, `<div class="loading-state">${sName} session is underway. Telemetry streams live as cars complete timed laps.</div>`);
+    } else {
+      setSafeContent(tower, '<div class="loading-state">No live session active currently. Telemetry streams live during race weekends.</div>');
+    }
     return;
   }
 
@@ -1216,13 +1221,13 @@ function renderLiveTimingTower() {
     const pos = item.position || (idx + 1);
     const drv = getDriverMeta(item.driver_number, driverMap);
     const num = item.driver_number;
-    const tyre = tyreMap[num] || tyreMap[String(num)] || FALLBACK_TYRE_DATA[num] || { compound: "medium", laps: 30 };
-    const lastLap = latestLaps[num] || latestLaps[String(num)] || FALLBACK_LAP_TIMES[num];
-    const activeFastestLap = fastestLap || FALLBACK_FASTEST_LAP;
+    const tyre = tyreMap[num] || tyreMap[String(num)] || { compound: "medium", laps: 0 };
+    const lastLap = latestLaps[num] || latestLaps[String(num)];
+    const activeFastestLap = fastestLap;
     const isFastestLap = activeFastestLap && String(activeFastestLap.driverNumber) === String(num);
     const lastLapStr = lastLap && lastLap.lap_duration
       ? `${Math.floor(lastLap.lap_duration / 60)}:${(lastLap.lap_duration % 60).toFixed(3).padStart(6, "0")}`
-      : (item.qTime || (item.inPit ? "IN PIT" : (item.retired ? "OUT" : "—")));
+      : (item.bestLapStr || item.qTime || (item.inPit ? "IN PIT" : (item.retired ? "OUT" : "—")));
 
     let gapStr = "—";
     if (idx === 0) {
@@ -1235,17 +1240,17 @@ function renderLiveTimingTower() {
       } else if (typeof item.gap_to_leader === "number" && typeof prev?.gap_to_leader === "number") {
         const delta = item.gap_to_leader - prev.gap_to_leader;
         gapStr = delta > 0 ? `+${delta.toFixed(3)}s` : "—";
-      } else if (typeof item.interval === "string") {
+      } else if (typeof item.interval === "string" && item.interval !== "") {
         gapStr = item.interval;
-      } else if (typeof item.gap_to_leader === "string") {
+      } else if (typeof item.gap_to_leader === "string" && item.gap_to_leader !== "") {
         gapStr = item.gap_to_leader;
       }
     } else {
       // Red Column: Cumulative gap to race leader
       if (typeof item.gap_to_leader === "number") {
         gapStr = `+${item.gap_to_leader.toFixed(3)}s`;
-      } else if (typeof item.gap_to_leader === "string") {
-        gapStr = item.gap_to_leader.startsWith("+") ? item.gap_to_leader : `+${item.gap_to_leader}`;
+      } else if (typeof item.gap_to_leader === "string" && item.gap_to_leader !== "") {
+        gapStr = item.gap_to_leader.startsWith("+") || item.gap_to_leader === "LEADER" ? item.gap_to_leader : `+${item.gap_to_leader}`;
       }
     }
 
@@ -1309,30 +1314,36 @@ function processF1SignalRState() {
     }
   });
 
+  const sessionType = (sessionInfo?.Type || "Race").toLowerCase();
+  const isTimedSession = sessionType.includes("practice") || sessionType.includes("quali") || sessionType.includes("fp") || sessionType.includes("sq");
+
   const latestLaps = {};
   let fastestLap = null;
   let bestTimeSec = 9999;
 
   Object.entries(lines).forEach(([numStr, line]) => {
     const num = parseInt(numStr, 10);
-    const lastVal = line.LastLapTime?.Value;
-    if (lastVal && typeof lastVal === "string" && lastVal.includes(":")) {
-      const [m, s] = lastVal.split(":");
+    const timeToUse = isTimedSession
+      ? (line.BestLapTime?.Value || line.LastLapTime?.Value)
+      : (line.LastLapTime?.Value || line.BestLapTime?.Value);
+
+    if (timeToUse && typeof timeToUse === "string" && timeToUse.includes(":")) {
+      const [m, s] = timeToUse.split(":");
       const dur = parseFloat(m) * 60 + parseFloat(s);
       if (!isNaN(dur)) {
-        latestLaps[num] = { lap_duration: dur };
+        latestLaps[num] = { lap_duration: dur, formatted: timeToUse };
       }
     }
 
-    if (line.LastLapTime?.OverallFastest && line.LastLapTime?.Value) {
-      fastestLap = { driverNumber: num, formatted: line.LastLapTime.Value };
-    } else if (line.BestLapTime?.Value && !fastestLap) {
+    if (line.BestLapTime?.Value) {
       const [bm, bs] = line.BestLapTime.Value.split(":");
       const bDur = parseFloat(bm) * 60 + parseFloat(bs);
       if (!isNaN(bDur) && bDur < bestTimeSec) {
         bestTimeSec = bDur;
         fastestLap = { driverNumber: num, formatted: line.BestLapTime.Value };
       }
+    } else if (line.LastLapTime?.OverallFastest && line.LastLapTime?.Value) {
+      fastestLap = { driverNumber: num, formatted: line.LastLapTime.Value };
     }
   });
 
@@ -1340,11 +1351,19 @@ function processF1SignalRState() {
     .map(([numStr, line]) => {
       const num = parseInt(numStr, 10);
       const pos = parseInt(line.Position || 99, 10);
+      const gapLeader = isTimedSession
+        ? (line.TimeDiffToFastest || line.GapToLeader || (pos === 1 ? "LEADER" : "—"))
+        : (line.GapToLeader || (pos === 1 ? "LEADER" : "—"));
+      const intervalVal = isTimedSession
+        ? (line.TimeDiffToPositionAhead || line.IntervalToPositionAhead?.Value || (pos === 1 ? "LEADER" : "—"))
+        : (line.IntervalToPositionAhead?.Value || (pos === 1 ? "LEADER" : "—"));
+      const bestLapStr = line.BestLapTime?.Value || line.LastLapTime?.Value || "";
       return {
         driver_number: num,
         position: pos,
-        gap_to_leader: line.GapToLeader || (pos === 1 ? "LEADER" : "—"),
-        interval: line.IntervalToPositionAhead?.Value || (pos === 1 ? "LEADER" : "—"),
+        gap_to_leader: gapLeader,
+        interval: intervalVal,
+        bestLapStr,
         inPit: Boolean(line.InPit),
         retired: Boolean(line.Retired || line.Stopped)
       };
@@ -1384,7 +1403,6 @@ function processF1SignalRState() {
   });
 
   const circuitName = sessionInfo?.Meeting?.Circuit?.ShortName || sessionInfo?.Meeting?.Name || "singapore";
-  const sessionType = (sessionInfo?.Type || "Race").toLowerCase();
   let totalLaps = getTotalLapsForCircuit(circuitName);
   if (sessionType.includes("sprint")) {
     totalLaps = Math.max(15, Math.round(totalLaps / 3));
@@ -1415,7 +1433,10 @@ function processF1SignalRState() {
   updateLiveBeaconState(isLive);
   updateSessionProgressBadge(sessionType, currentLap, totalLaps, sessionProgress.endTime, isLive, false);
 
+  const round = scheduledRace?.round || sessionInfo?.Meeting?.Number;
   cachedLiveTelemetry = {
+    round,
+    timestamp: Date.now(),
     sortedDrivers,
     driverMap,
     tyreMap,
@@ -1441,7 +1462,7 @@ async function connectF1LiveTiming() {
   try {
     const negRes = await fetch("https://livetiming.formula1.com/signalrcore/negotiate?negotiateVersion=1", {
       method: "POST",
-      headers: { "User-Agent": "Mozilla/5.0" }
+      credentials: "include"
     });
     if (!negRes.ok) throw new Error(`Negotiate failed: ${negRes.status}`);
     const negData = await negRes.json();
@@ -1535,39 +1556,51 @@ async function loadLiveTelemetry() {
   const statusPill = document.getElementById("track-status-pill");
   const statusLabel = document.getElementById("track-status-label");
 
+  // Ensure schedule is loaded first to validate current race round
+  if (!allRaces || allRaces.length === 0) {
+    try {
+      const res = await fetch(`https://f1.trionine.com/api/current.json?_t=${Date.now()}`);
+      if (res.ok) {
+        const data = await res.json();
+        allRaces = data?.MRData?.RaceTable?.Races || [];
+        findNextRaceIndex();
+      }
+    } catch (_) {}
+  }
+
+  const currentRound = (allRaces && allRaces.length > 0) ? allRaces[actualNextRaceIndex]?.round : null;
+
   // Instant render from memory or localStorage cache so Live tab opens with zero lag
   if (cachedLiveTelemetry) {
-    renderLiveTimingTower();
+    if (cachedLiveTelemetry.round && currentRound && String(cachedLiveTelemetry.round) !== String(currentRound)) {
+      cachedLiveTelemetry = null;
+      try { localStorage.removeItem("f1_cached_telemetry"); } catch (_) {}
+    } else {
+      renderLiveTimingTower();
+    }
   } else {
     try {
       const cached = localStorage.getItem("f1_cached_telemetry");
       if (cached) {
-        cachedLiveTelemetry = JSON.parse(cached);
-        renderLiveTimingTower();
+        const parsed = JSON.parse(cached);
+        if (parsed.round && currentRound && String(parsed.round) !== String(currentRound)) {
+          localStorage.removeItem("f1_cached_telemetry");
+        } else {
+          cachedLiveTelemetry = parsed;
+          renderLiveTimingTower();
+        }
       }
     } catch (_) {}
   }
 
   // 1. Primary Live Feed: Connect to Formula 1 Official SignalR Stream
   const connectedSignalR = await connectF1LiveTiming();
-  if (connectedSignalR) {
+  if (connectedSignalR && Object.keys(liveSignalRState.timingData?.Lines || {}).length > 0) {
     return;
   }
 
   // 2. Secondary Fallback: OpenF1 / Qualifying Starting Grid
   try {
-    // Ensure schedule is loaded
-    if (!allRaces || allRaces.length === 0) {
-      try {
-        const res = await fetch(`https://f1.trionine.com/api/current.json?_t=${Date.now()}`);
-        if (res.ok) {
-          const data = await res.json();
-          allRaces = data?.MRData?.RaceTable?.Races || [];
-          findNextRaceIndex();
-        }
-      } catch (_) {}
-    }
-
     const now = Date.now();
     let scheduledActiveSession = null;
     let scheduledRace = (allRaces && allRaces.length > 0) ? allRaces[actualNextRaceIndex] : null;
@@ -1598,7 +1631,7 @@ async function loadLiveTelemetry() {
     const sessData = (sessRes && sessRes.ok) ? await sessRes.json().catch(() => []) : [];
     const openF1Session = Array.isArray(sessData) && sessData.length > 0 ? sessData[0] : null;
 
-    const isSessionTrulyLive = Boolean(scheduledActiveSession) || Boolean(isOpenF1Restricted) || Boolean(
+    const isSessionTrulyLive = Boolean(scheduledActiveSession) || Boolean(
       openF1Session && openF1Session.date_start && openF1Session.date_end &&
       now >= new Date(openF1Session.date_start).getTime() &&
       now <= new Date(openF1Session.date_end).getTime()
@@ -1860,11 +1893,13 @@ async function loadLiveTelemetry() {
 
     // ------------------------------------------------------------------
     // LIVE SESSION FALLBACK: If session is live but OpenF1 returned no drivers / 401
+    // (Strictly restricted to Race/Sprint sessions with current round qualifying data)
     // ------------------------------------------------------------------
     let usedOpenF1Fallback = false;
-    if (isSessionTrulyLive && sortedDrivers.length === 0) {
-      usedOpenF1Fallback = true;
+    const isRaceOrSprint = sessionType === "race" || sessionType === "sprint";
+    const currentRoundNum = scheduledRace?.round;
 
+    if (isSessionTrulyLive && isRaceOrSprint && sortedDrivers.length === 0) {
       if (!latestQualifyingData) {
         try {
           const qRes = await fetch(`https://f1.trionine.com/api/qualifying.json?_t=${Date.now()}`);
@@ -1882,7 +1917,13 @@ async function loadLiveTelemetry() {
         return parseFloat(m) * 60 + parseFloat(s);
       };
 
-      if (latestQualifyingData?.QualifyingResults && latestQualifyingData.QualifyingResults.length > 0) {
+      const isCurrentRoundQuali = Boolean(
+        latestQualifyingData && currentRoundNum &&
+        String(latestQualifyingData.round) === String(currentRoundNum)
+      );
+
+      if (isCurrentRoundQuali && latestQualifyingData?.QualifyingResults && latestQualifyingData.QualifyingResults.length > 0) {
+        usedOpenF1Fallback = true;
         const qResults = latestQualifyingData.QualifyingResults;
         const poleItem = qResults[0];
         const poleTimeStr = poleItem.Q3 || poleItem.Q2 || poleItem.Q1 || "";
@@ -1955,29 +1996,6 @@ async function loadLiveTelemetry() {
             qTime: bestStr || ""
           };
         });
-      } else {
-        if (scheduledActiveSession) {
-          const FORMATION_LAP_MS = 3.5 * 60 * 1000;
-          const elapsedMs = Math.max(0, now - scheduledActiveSession.t);
-          const elapsedRaceMs = Math.max(0, elapsedMs - FORMATION_LAP_MS);
-          currentLap = Math.min(totalLaps, Math.max(1, Math.floor(elapsedRaceMs / (102 * 1000)) + 1));
-        } else {
-          currentLap = Math.max(1, Math.round(totalLaps * 0.25));
-        }
-
-        let p = 1;
-        for (const [nStr, meta] of Object.entries(STATIC_DRIVERS)) {
-          const n = parseInt(nStr, 10);
-          driverMap[n] = meta;
-          tyreMap[n] = { compound: "medium", laps: currentLap };
-          sortedDrivers.push({
-            driver_number: n,
-            position: p,
-            gap_to_leader: p === 1 ? "LEADER" : `+P${p}`,
-            interval: p === 1 ? "LEADER" : `+P${p}`
-          });
-          p++;
-        }
       }
     }
 
@@ -1996,6 +2014,8 @@ async function loadLiveTelemetry() {
     updateSessionProgressBadge(sessionType, currentLap, totalLaps, endTime, isSessionTrulyLive, usedOpenF1Fallback);
 
     cachedLiveTelemetry = {
+      round: currentRoundNum,
+      timestamp: Date.now(),
       sortedDrivers,
       driverMap,
       tyreMap,
