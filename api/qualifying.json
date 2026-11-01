@@ -6056,21 +6056,6 @@
             {
               "position": "8",
               "Driver": {
-                "givenName": "Liam",
-                "familyName": "Lawson",
-                "code": "LAW"
-              },
-              "Constructor": {
-                "constructorId": "racing_bulls",
-                "name": "Racing Bulls"
-              },
-              "Q1": "1:18.097",
-              "Q2": "1:17.207",
-              "Q3": "1:17.029"
-            },
-            {
-              "position": "9",
-              "Driver": {
                 "givenName": "Arvid",
                 "familyName": "Lindblad",
                 "code": "LIN"
@@ -6084,7 +6069,7 @@
               "Q3": "1:17.117"
             },
             {
-              "position": "10",
+              "position": "9",
               "Driver": {
                 "givenName": "Pierre",
                 "familyName": "Gasly",
@@ -6099,7 +6084,7 @@
               "Q3": "1:17.153"
             },
             {
-              "position": "11",
+              "position": "10",
               "Driver": {
                 "givenName": "Nico",
                 "familyName": "Hulkenberg",
@@ -6114,7 +6099,7 @@
               "Q3": ""
             },
             {
-              "position": "12",
+              "position": "11",
               "Driver": {
                 "givenName": "Franco",
                 "familyName": "Colapinto",
@@ -6129,7 +6114,7 @@
               "Q3": ""
             },
             {
-              "position": "13",
+              "position": "12",
               "Driver": {
                 "givenName": "Oscar",
                 "familyName": "Piastri",
@@ -6144,7 +6129,7 @@
               "Q3": ""
             },
             {
-              "position": "14",
+              "position": "13",
               "Driver": {
                 "givenName": "Gabriel",
                 "familyName": "Bortoleto",
@@ -6159,7 +6144,7 @@
               "Q3": ""
             },
             {
-              "position": "15",
+              "position": "14",
               "Driver": {
                 "givenName": "Oliver",
                 "familyName": "Bearman",
@@ -6174,7 +6159,7 @@
               "Q3": ""
             },
             {
-              "position": "16",
+              "position": "15",
               "Driver": {
                 "givenName": "Carlos",
                 "familyName": "Sainz",
@@ -6189,7 +6174,7 @@
               "Q3": ""
             },
             {
-              "position": "17",
+              "position": "16",
               "Driver": {
                 "givenName": "Alexander",
                 "familyName": "Albon",
@@ -6204,7 +6189,7 @@
               "Q3": ""
             },
             {
-              "position": "18",
+              "position": "17",
               "Driver": {
                 "givenName": "Fernando",
                 "familyName": "Alonso",
@@ -6219,7 +6204,7 @@
               "Q3": ""
             },
             {
-              "position": "19",
+              "position": "18",
               "Driver": {
                 "givenName": "Ryo",
                 "familyName": "Hirakawa",
@@ -6234,7 +6219,7 @@
               "Q3": ""
             },
             {
-              "position": "20",
+              "position": "19",
               "Driver": {
                 "givenName": "Lance",
                 "familyName": "Stroll",
@@ -6249,7 +6234,7 @@
               "Q3": ""
             },
             {
-              "position": "21",
+              "position": "20",
               "Driver": {
                 "givenName": "Sergio",
                 "familyName": "Perez",
@@ -6264,7 +6249,7 @@
               "Q3": ""
             },
             {
-              "position": "22",
+              "position": "21",
               "Driver": {
                 "givenName": "Valtteri",
                 "familyName": "Bottas",
