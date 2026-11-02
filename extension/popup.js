@@ -200,16 +200,17 @@ function initOnlineOfflineListeners() {
     if (banner) {
       banner.style.display = isOffline ? "flex" : "none";
     }
-    if (!isOffline) {
-      // Re-sync active tab when network comes back
-      if (activeTab === "tab-schedule") loadScheduleData();
-      else if (activeTab === "tab-standings") loadStandings();
-      else if (activeTab === "tab-results") loadResults();
-      else if (activeTab === "tab-live") loadLiveTelemetry();
-    }
   };
 
-  window.addEventListener("online", updateStatus);
+  window.addEventListener("online", () => {
+    updateStatus();
+    // Re-sync active tab when network connection is restored
+    if (activeTab === "tab-schedule") loadScheduleData();
+    else if (activeTab === "tab-standings") loadStandings();
+    else if (activeTab === "tab-results") loadResults();
+    else if (activeTab === "tab-live") loadLiveTelemetry();
+  });
+
   window.addEventListener("offline", updateStatus);
   updateStatus();
 }
