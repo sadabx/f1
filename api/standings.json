@@ -6,7 +6,7 @@
           "DriverStandings": [
             {
               "position": "1",
-              "points": "365",
+              "points": "380",
               "Driver": {
                 "givenName": "Kimi",
                 "familyName": "Antonelli",
@@ -20,21 +20,21 @@
             },
             {
               "position": "2",
-              "points": "242",
+              "points": "261",
               "Driver": {
-                "givenName": "George",
-                "familyName": "Russell",
-                "code": "RUS"
+                "givenName": "Max",
+                "familyName": "Verstappen",
+                "code": "VER"
               },
               "Constructors": [
                 {
-                  "name": "Mercedes"
+                  "name": "Red Bull Racing"
                 }
               ]
             },
             {
               "position": "3",
-              "points": "241",
+              "points": "259",
               "Driver": {
                 "givenName": "Lewis",
                 "familyName": "Hamilton",
@@ -48,21 +48,21 @@
             },
             {
               "position": "4",
-              "points": "236",
+              "points": "250",
               "Driver": {
-                "givenName": "Max",
-                "familyName": "Verstappen",
-                "code": "VER"
+                "givenName": "George",
+                "familyName": "Russell",
+                "code": "RUS"
               },
               "Constructors": [
                 {
-                  "name": "Red Bull Racing"
+                  "name": "Mercedes"
                 }
               ]
             },
             {
               "position": "5",
-              "points": "233",
+              "points": "245",
               "Driver": {
                 "givenName": "Charles",
                 "familyName": "Leclerc",
@@ -76,7 +76,7 @@
             },
             {
               "position": "6",
-              "points": "211",
+              "points": "221",
               "Driver": {
                 "givenName": "Lando",
                 "familyName": "Norris",
@@ -90,7 +90,7 @@
             },
             {
               "position": "7",
-              "points": "144",
+              "points": "150",
               "Driver": {
                 "givenName": "Oscar",
                 "familyName": "Piastri",
@@ -118,7 +118,7 @@
             },
             {
               "position": "9",
-              "points": "77",
+              "points": "79",
               "Driver": {
                 "givenName": "Liam",
                 "familyName": "Lawson",
@@ -132,7 +132,7 @@
             },
             {
               "position": "10",
-              "points": "42",
+              "points": "43",
               "Driver": {
                 "givenName": "Pierre",
                 "familyName": "Gasly",
@@ -160,7 +160,7 @@
             },
             {
               "position": "12",
-              "points": "27",
+              "points": "31",
               "Driver": {
                 "givenName": "Franco",
                 "familyName": "Colapinto",
@@ -314,6 +314,20 @@
             },
             {
               "position": "23",
+              "points": "0",
+              "Driver": {
+                "givenName": "Ryo",
+                "familyName": "Hirakawa",
+                "code": "HIR"
+              },
+              "Constructors": [
+                {
+                  "name": "Haas F1 Team"
+                }
+              ]
+            },
+            {
+              "position": "24",
               "points": "0",
               "Driver": {
                 "givenName": "Sergio",
