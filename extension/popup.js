@@ -185,12 +185,34 @@ let latestQualifyingData = null;
 document.addEventListener('DOMContentLoaded', async () => {
   setupNavigation();
   setupUIEventListeners();
+  initOnlineOfflineListeners();
 
   await loadSettings();
   await loadDismissedNotifs();
   await loadScheduleData();
   await updateNotificationsBadge();
 });
+
+function initOnlineOfflineListeners() {
+  const banner = document.getElementById("offline-banner");
+  const updateStatus = () => {
+    const isOffline = !navigator.onLine;
+    if (banner) {
+      banner.style.display = isOffline ? "flex" : "none";
+    }
+    if (!isOffline) {
+      // Re-sync active tab when network comes back
+      if (activeTab === "tab-schedule") loadScheduleData();
+      else if (activeTab === "tab-standings") loadStandings();
+      else if (activeTab === "tab-results") loadResults();
+      else if (activeTab === "tab-live") loadLiveTelemetry();
+    }
+  };
+
+  window.addEventListener("online", updateStatus);
+  window.addEventListener("offline", updateStatus);
+  updateStatus();
+}
 
 // ============================================================
 // SETTINGS
@@ -325,23 +347,40 @@ function setupNavigation() {
 // TAB 1: WEEKEND SCHEDULE & COUNTDOWN
 // ============================================================
 async function loadScheduleData() {
+  let loadedFromCache = false;
+
+  // 1. Try to load and render from local cache first for instant offline/startup display
+  try {
+    const cached = await api.storage.local.get("f1_cached_schedule");
+    if (cached.f1_cached_schedule?.data && Array.isArray(cached.f1_cached_schedule.data) && cached.f1_cached_schedule.data.length > 0) {
+      allRaces = cached.f1_cached_schedule.data;
+      findNextRaceIndex();
+      renderRoundIndex(actualNextRaceIndex);
+      loadedFromCache = true;
+    }
+  } catch (_) {}
+
+  // 2. Fetch fresh data from network if online
   try {
     const res = await fetch(`https://f1.trionine.com/api/current.json?_t=${Date.now()}`);
     if (!res.ok) throw new Error('Calendar fetch failed');
     const data = await res.json();
-    allRaces = data?.MRData?.RaceTable?.Races || [];
+    const races = data?.MRData?.RaceTable?.Races || [];
 
-    if (allRaces.length === 0) {
-      document.getElementById('hero-race-name').textContent = 'No Races Scheduled';
+    if (races.length > 0) {
+      allRaces = races;
+      await api.storage.local.set({
+        f1_cached_schedule: { timestamp: Date.now(), data: races }
+      });
+      findNextRaceIndex();
+      renderRoundIndex(actualNextRaceIndex);
       return;
     }
-
-    findNextRaceIndex();
-    renderRoundIndex(actualNextRaceIndex);
-
   } catch (err) {
-    document.getElementById('hero-race-name').textContent = 'F1 Dash (Offline)';
-    document.getElementById('hero-circuit').textContent = 'Unable to connect to calendar';
+    if (!loadedFromCache) {
+      document.getElementById('hero-race-name').textContent = 'F1 Dash (Offline)';
+      document.getElementById('hero-circuit').textContent = 'Connect to internet to load calendar';
+    }
   }
 }
 
@@ -574,14 +613,32 @@ function startCountdown(sess, sessions = [], previousRaceFinalSession = null) {
 // ============================================================
 async function loadStandings() {
   const container = document.getElementById('standings-container');
+  let loadedFromCache = false;
+
   if (!standingsData) {
+    try {
+      const cached = await api.storage.local.get("f1_cached_standings");
+      if (cached.f1_cached_standings?.data) {
+        standingsData = cached.f1_cached_standings.data;
+        renderStandings();
+        loadedFromCache = true;
+      }
+    } catch (_) {}
+
     try {
       const res = await fetch(`https://f1.trionine.com/api/standings.json?_t=${Date.now()}`);
       if (!res.ok) throw new Error('Standings fetch failed');
       standingsData = await res.json();
-    } catch (e) {
-      setSafeContent(container, '<div class="loading-state">Failed to load championship standings.</div>');
+      await api.storage.local.set({
+        f1_cached_standings: { timestamp: Date.now(), data: standingsData }
+      });
+      renderStandings();
       return;
+    } catch (e) {
+      if (!loadedFromCache) {
+        setSafeContent(container, '<div class="loading-state">Offline. Connect to the internet to load championship standings.</div>');
+        return;
+      }
     }
   }
 
@@ -858,6 +915,20 @@ async function loadResults() {
   const gridSection = document.getElementById("results-grid-section");
   const heroCard = document.getElementById("results-hero-card");
 
+  let loadedFromCache = false;
+
+  // 1. Instant offline/startup render from local storage cache
+  try {
+    const cached = await api.storage.local.get("f1_cached_results");
+    if (cached.f1_cached_results?.data && Array.isArray(cached.f1_cached_results.data) && cached.f1_cached_results.data.length > 0) {
+      allResultsRaces = cached.f1_cached_results.data;
+      if (cached.f1_cached_results.qualifyingData) {
+        latestQualifyingData = cached.f1_cached_results.qualifyingData;
+      }
+      loadedFromCache = true;
+    }
+  } catch (_) {}
+
   try {
     // Ensure schedule is loaded for next race round comparison
     if (!allRaces || allRaces.length === 0) {
@@ -880,6 +951,62 @@ async function loadResults() {
     const data = await resResults.json();
     const races = data?.MRData?.RaceTable?.Races || [];
     allResultsRaces = races;
+
+    // Resilient Fallback: If a scheduled race has concluded but is not yet in results.json, fetch latest classification from OpenF1
+    const now = Date.now();
+    const completedRaces = (allRaces || []).filter(rc => {
+      const raceTime = new Date(`${rc.date}T${rc.time || "12:00:00Z"}`).getTime();
+      return (raceTime + (2 * 3600 * 1000)) < now;
+    });
+    const latestCompletedScheduled = completedRaces.length > 0 ? completedRaces[completedRaces.length - 1] : null;
+
+    if (latestCompletedScheduled && (!races.length || !races.some(r => String(r.round) === String(latestCompletedScheduled.round)))) {
+      try {
+        const [resRes, drvRes] = await Promise.all([
+          fetch("https://api.openf1.org/v1/session_result?session_key=latest").catch(() => null),
+          fetch("https://api.openf1.org/v1/drivers?session_key=latest").catch(() => null)
+        ]);
+        if (resRes && resRes.ok) {
+          const resData = await resRes.json();
+          const drvData = (drvRes && drvRes.ok) ? await drvRes.json() : [];
+          const drvMap = {};
+          if (Array.isArray(drvData)) {
+            drvData.forEach(d => {
+              drvMap[d.driver_number] = {
+                code: d.name_acronym || `#${d.driver_number}`,
+                givenName: d.first_name || "",
+                familyName: d.last_name || ""
+              };
+            });
+          }
+
+          if (Array.isArray(resData) && resData.length > 0) {
+            const sorted = resData.slice().sort((a, b) => (a.position || 99) - (b.position || 99));
+            const podiumResults = sorted.slice(0, 3).map(item => {
+              const meta = drvMap[item.driver_number] || STATIC_DRIVERS[item.driver_number] || {};
+              return {
+                position: String(item.position),
+                Driver: {
+                  givenName: meta.givenName || meta.name?.split(" ")?.[0] || "",
+                  familyName: meta.familyName || meta.name?.split(" ")?.slice(1)?.join(" ") || "",
+                  code: meta.code || `#${item.driver_number}`
+                }
+              };
+            });
+
+            if (podiumResults.length > 0) {
+              const liveRaceResult = {
+                round: String(latestCompletedScheduled.round),
+                raceName: latestCompletedScheduled.raceName,
+                Results: podiumResults
+              };
+              races.push(liveRaceResult);
+              allResultsRaces = races;
+            }
+          }
+        }
+      } catch (_) {}
+    }
 
     // Check qualifying data
     if (resQuali && resQuali.ok) {
@@ -1008,8 +1135,21 @@ async function loadResults() {
       }
     }
 
+    // Save fresh data to local cache for offline access
+    try {
+      api.storage.local.set({
+        f1_cached_results: {
+          timestamp: Date.now(),
+          data: allResultsRaces,
+          qualifyingData: latestQualifyingData
+        }
+      });
+    } catch (_) {}
+
   } catch (e) {
-    if (container) setSafeContent(container, '<div class="loading-state">Unable to load race results.</div>');
+    if (!loadedFromCache) {
+      if (container) setSafeContent(container, '<div class="loading-state">Offline. Connect to the internet to load race results.</div>');
+    }
   }
 }
 
@@ -1555,6 +1695,27 @@ async function loadLiveTelemetry() {
   const tower = document.getElementById("timing-tower-list");
   const statusPill = document.getElementById("track-status-pill");
   const statusLabel = document.getElementById("track-status-label");
+
+  if (!navigator.onLine) {
+    if (statusPill && statusLabel) {
+      statusPill.className = "status-pill status-red";
+      statusLabel.textContent = "OFFLINE";
+    }
+    const towerCard = document.getElementById("live-timing-tower");
+    if (towerCard) {
+      towerCard.style.display = "block";
+    }
+    if (tower) {
+      setSafeContent(tower, `
+        <div class="live-offline-card">
+          <div class="live-offline-icon">📡</div>
+          <div class="live-offline-title">Live Timing Offline</div>
+          <div class="live-offline-desc">Live telemetry requires an active internet connection. Connecting automatically when online.</div>
+        </div>
+      `);
+    }
+    return;
+  }
 
   // Ensure schedule is loaded first to validate current race round
   if (!allRaces || allRaces.length === 0) {

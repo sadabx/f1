@@ -99,15 +99,55 @@ def get_race_name_to_round_mapping():
     """Fetches F1Calendar.com data and returns a mapping from normalized race name to round number."""
     url = f"https://raw.githubusercontent.com/sportstimes/f1/main/_db/f1/{CURRENT_YEAR}.json"
     mapping = {}
+    country_aliases = {
+        "australia": "australian",
+        "china": "chinese",
+        "japan": "japanese",
+        "canada": "canadian",
+        "austria": "austrian",
+        "great britain": "british",
+        "britain": "british",
+        "belgium": "belgian",
+        "hungary": "hungarian",
+        "netherlands": "dutch",
+        "italy": "italian",
+        "spain": "spanish",
+        "mexico": "mexican",
+        "brazil": "brazilian",
+        "bahrain": "bahrain",
+        "usa": "united states",
+        "us": "united states"
+    }
+
     try:
         response = requests.get(url, timeout=15)
         if response.status_code == 200:
             data = response.json()
             for index, item in enumerate(data.get("races", [])):
-                name = item.get("name", "")
-                norm_name = normalize_race_name(name)
                 round_num = str(item.get("round", index + 1))
-                mapping[norm_name] = round_num
+                candidates = [
+                    item.get("name", ""),
+                    item.get("slug", "").replace("-", " "),
+                    item.get("localeKey", "").replace("-", " "),
+                    item.get("location", "")
+                ]
+                for c in candidates:
+                    if c:
+                        norm = normalize_race_name(c)
+                        mapping[norm] = round_num
+                        clean_gp = norm.replace("Grand Prix", "").strip()
+                        mapping[clean_gp] = round_num
+                        mapping[f"{clean_gp} Grand Prix"] = round_num
+
+            # Add reverse and country alias keys
+            for country, nat in country_aliases.items():
+                for suffix in ["", " Grand Prix"]:
+                    nat_key = normalize_race_name(nat + suffix)
+                    if nat_key in mapping:
+                        r_num = mapping[nat_key]
+                        c_key = normalize_race_name(country + suffix)
+                        mapping[c_key] = r_num
+                        mapping[country.title() + " Grand Prix"] = r_num
     except Exception as e:
         print(f"⚠️ Warning: Could not generate race name to round mapping: {e}")
     return mapping

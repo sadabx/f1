@@ -173,6 +173,49 @@ async function checkQualifyingAndNotify() {
 // ============================================================
 // AUDIO PLAYBACK ENGINE (Official F1 Theme MP3)
 // ============================================================
+function playWebAudioFanfare(volume = 0.85) {
+  try {
+    const AudioCtx = typeof AudioContext !== "undefined" ? AudioContext : (typeof webkitAudioContext !== "undefined" ? webkitAudioContext : null);
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const gain = ctx.createGain();
+    gain.gain.value = Math.max(0, Math.min(1, volume)) * 0.5;
+    gain.connect(ctx.destination);
+
+    const now = ctx.currentTime;
+    const notes = [
+      { f: 392.00, t: 0.0, d: 0.3 },   // G4
+      { f: 523.25, t: 0.32, d: 0.3 },  // C5
+      { f: 622.25, t: 0.65, d: 0.2 },  // Eb5
+      { f: 783.99, t: 0.88, d: 0.6 },  // G5
+      { f: 698.46, t: 1.5, d: 0.3 },   // F5
+      { f: 622.25, t: 1.85, d: 0.35 }, // Eb5
+      { f: 523.25, t: 2.25, d: 0.2 },  // C5
+      { f: 698.46, t: 2.5, d: 0.35 },  // F5
+      { f: 783.99, t: 2.9, d: 1.0 }    // G5
+    ];
+
+    notes.forEach((n) => {
+      const osc = ctx.createOscillator();
+      const noteGain = ctx.createGain();
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(n.f, now + n.t);
+
+      noteGain.gain.setValueAtTime(0.001, now + n.t);
+      noteGain.gain.exponentialRampToValueAtTime(1, now + n.t + 0.05);
+      noteGain.gain.exponentialRampToValueAtTime(0.001, now + n.t + n.d);
+
+      osc.connect(noteGain);
+      noteGain.connect(gain);
+      osc.start(now + n.t);
+      osc.stop(now + n.t + n.d);
+      currentSynthOscs.push(osc);
+    });
+  } catch (e) {
+    console.error("[F1 Alert] Web Audio synth fallback failed:", e);
+  }
+}
+
 async function playF1Theme(volume = 0.85) {
   stopF1Theme();
 
@@ -191,12 +234,14 @@ async function playF1Theme(volume = 0.85) {
       const playPromise = currentAudio.play();
       if (playPromise !== undefined) {
         playPromise.catch((err) => {
-          console.warn('[F1 Alert] Audio playback error:', err);
+          console.warn('[F1 Alert] Audio playback error, falling back to Web Audio synth:', err);
+          playWebAudioFanfare(volume);
         });
       }
       return;
     } catch (err) {
-      console.warn('[F1 Alert] Audio creation error:', err);
+      console.warn('[F1 Alert] Audio creation error, falling back to Web Audio synth:', err);
+      playWebAudioFanfare(volume);
     }
   }
 
@@ -377,7 +422,8 @@ api.alarms.onAlarm.addListener(async (alarm) => {
     if (sessInfo) {
       const now = Date.now();
       const diffToStart = sessInfo.startTime - now;
-      if (diffToStart > 20 * 60 * 1000 || diffToStart < -60 * 60 * 1000) {
+      const maxDiff = Math.max(35, leadMin + 10) * 60 * 1000;
+      if (diffToStart > maxDiff || diffToStart < -60 * 60 * 1000) {
         console.warn(`[F1 Alert] Ignored phantom alarm trigger: ${sessInfo.raceName} ${sessInfo.sessionCode} is ${Math.round(diffToStart / 60000)}m away.`);
         return;
       }
