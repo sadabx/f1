@@ -32,7 +32,7 @@
       </div>
 
       <div class="top-controls">
-        <span class="season-pill">2026</span>
+        <span class="season-label" id="season-display">2026</span>
         <button class="icon-btn notif-bell-btn" id="btn-open-notifications" title="Race Alerts & Notifications" aria-label="Notifications">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
@@ -112,7 +112,7 @@
           </div>
 
           <!-- Digital Clock Numerals -->
-          <div class="countdown-grid">
+          <div class="countdown-grid" id="countdown-grid">
             <div class="cd-unit">
               <span class="cd-val" id="cd-days">00</span>
               <span class="cd-lbl">D</span>
@@ -134,11 +134,20 @@
             </div>
           </div>
 
+          <!-- Date-only Countdown Banner (for TBC / date-only races) -->
+          <div class="countdown-date-only" id="countdown-date-only" style="display: none;">
+            <div class="cd-date-main">
+              <span class="cd-date-days" id="cd-tbc-days">0</span>
+              <span class="cd-date-label" id="cd-tbc-label">DAYS TO GO</span>
+            </div>
+            <span class="cd-date-sub" id="cd-tbc-date">—</span>
+          </div>
+
           <!-- Relative target label -->
           <div class="hero-sub-footer">
             <div class="hero-time-info" id="hero-time-info">Loading countdown...</div>
-            <button class="return-next-btn" id="btn-return-next" style="display: none;">
-              Return to Current Round
+            <button class="return-next-btn" id="btn-return-next" style="display: none;" title="Return to current upcoming race">
+              ↩ Current
             </button>
           </div>
 

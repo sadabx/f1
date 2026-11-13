@@ -523,6 +523,51 @@ body {
   margin: 0 2px;
 }
 
+/* Date-Only Countdown (for TBC / pending sessions) */
+.countdown-date-only {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 9px 14px;
+  margin-bottom: 10px;
+}
+
+.cd-date-main {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.cd-date-days {
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--f1red);
+  letter-spacing: -0.5px;
+  text-shadow: 0 0 10px rgba(225, 6, 0, 0.3);
+  line-height: 1;
+}
+
+.cd-date-label {
+  font-family: var(--font-f1);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: var(--text);
+}
+
+.cd-date-sub {
+  font-family: var(--font-f1);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
 .hero-sub-footer,
 .hero-footer-row {
   display: flex;
@@ -543,21 +588,32 @@ body {
 }
 
 .return-next-btn {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text-muted);
+  background: rgba(225, 6, 0, 0.14);
+  border: 1px solid rgba(225, 6, 0, 0.45);
+  color: #ffffff;
+  font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 700;
-  padding: 2px 7px;
-  border-radius: var(--radius-sm);
+  letter-spacing: 0.35px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
   display: inline-flex;
   align-items: center;
+  gap: 3px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  line-height: 1.2;
+  transition: all 0.16s ease;
+  box-shadow: 0 0 10px rgba(225, 6, 0, 0.18);
 }
 .return-next-btn:hover {
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(225, 6, 0, 0.28);
+  border-color: rgba(225, 6, 0, 0.85);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 0 14px rgba(225, 6, 0, 0.35);
+}
+.return-next-btn:active {
+  transform: translateY(0);
 }
 
 /* ============================================================
@@ -1636,17 +1692,23 @@ body {
   color: #fff;
 }
 
+.season-label,
 .season-pill {
   display: inline-flex;
   align-items: center;
-  min-height: 24px;
-  padding: 0 7px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 3px;
-  color: var(--text-sub);
+  justify-content: center;
+  color: #ffffff;
   font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.35px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  background: transparent;
+  border: none;
+  padding: 0 4px;
+  margin: 0;
+  user-select: none;
+  line-height: 1;
+  transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
 .top-controls {
@@ -1832,10 +1894,6 @@ body {
   font-size: 10px;
 }
 
-.return-next-btn {
-  border-color: rgba(255, 255, 255, 0.18);
-  border-radius: 3px;
-}
 
 .sessions-section,
 .card-section,

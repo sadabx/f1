@@ -54,7 +54,16 @@ def normalize_race_name(name):
         "abu dhabi": "Abu Dhabi",
         "lasvegas": "Las Vegas",
         "sao paulo": "Brazilian",
-        "barcelona": "Barcelona-Catalunya"
+        "barcelona": "Barcelona-Catalunya",
+        "madrid": "Spanish",
+        "portugal": "Portuguese",
+        "portuguese": "Portuguese",
+        "portimao": "Portuguese",
+        "turkey": "Turkish",
+        "turkish": "Turkish",
+        "türkiye": "Turkish",
+        "turkiye": "Turkish",
+        "istanbul": "Turkish"
     }
     
     lower_clean = clean.lower()
@@ -116,7 +125,10 @@ def get_race_name_to_round_mapping():
         "brazil": "brazilian",
         "bahrain": "bahrain",
         "usa": "united states",
-        "us": "united states"
+        "us": "united states",
+        "portugal": "portuguese",
+        "turkey": "turkish",
+        "turkiye": "turkish"
     }
 
     try:
@@ -473,14 +485,14 @@ def scrape_qualifying_results(name_to_round):
         print(f"❌ Failed to scrape qualifying details: {e}")
         raise e
 
-def generate_clean_calendar():
-    print("Fetching Complete Session Calendar from F1Calendar.com...")
-    url = f"https://raw.githubusercontent.com/sportstimes/f1/main/_db/f1/{CURRENT_YEAR}.json"
+def generate_clean_calendar(year=CURRENT_YEAR, output_path="api/current.json", required=True):
+    print(f"Fetching Complete Session Calendar ({year}) from F1Calendar.com...")
+    url = f"https://raw.githubusercontent.com/sportstimes/f1/main/_db/f1/{year}.json"
     
     try:
         response = requests.get(url, timeout=15)
         if response.status_code != 200:
-            raise ValueError(f"Failed to pull community database: {response.status_code}")
+            raise ValueError(f"Failed to pull community database ({year}): {response.status_code}")
             
         data = response.json()
         races_list = []
@@ -501,7 +513,7 @@ def generate_clean_calendar():
                 gp_date = gp_time_raw.split('T')[0]
                 gp_time = gp_time_raw.split('T')[1]
             else:
-                gp_date = item.get("date", "2026-01-01")
+                gp_date = item.get("date", f"{year}-01-01")
                 gp_time = "13:00:00Z"
                 
             race_obj = {
@@ -532,20 +544,21 @@ def generate_clean_calendar():
         ergast_json = {
             "MRData": {
                 "RaceTable": {
-                    "season": CURRENT_YEAR,
+                    "season": str(year),
                     "Races": races_list
                 }
             }
         }
 
-        os.makedirs("api", exist_ok=True)
-        with open("api/current.json", "w", encoding="utf-8") as f:
+        os.makedirs(os.path.dirname(output_path) or "api", exist_ok=True)
+        with open(output_path, "w", encoding="utf-8") as f:
             json.dump(ergast_json, f, indent=2)
-        print("✅ Comprehensive multi-session calendar cached successfully.")
+        print(f"✅ Calendar ({year}) cached to {output_path} successfully.")
 
     except Exception as e:
-        print(f"❌ Failed to parse all community sessions: {e}")
-        raise e
+        print(f"❌ Failed to parse {year} community sessions: {e}")
+        if required:
+            raise e
 
 if __name__ == "__main__":
     try:
@@ -553,7 +566,8 @@ if __name__ == "__main__":
         scrape_standings()
         scrape_race_results(name_to_round)
         scrape_qualifying_results(name_to_round)
-        generate_clean_calendar()
+        generate_clean_calendar(CURRENT_YEAR, "api/current.json", required=True)
+        generate_clean_calendar("2027", "api/2027.json", required=False)
         print("🚀 API generation completed successfully!")
     except Exception as main_error:
         print(f"💥 Critical API build failure: {main_error}")

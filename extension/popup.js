@@ -49,7 +49,10 @@ const FLAGS = {
   "Brazil": "🇧🇷", "Brazilian": "🇧🇷", "São Paulo": "🇧🇷", "Sao Paulo": "🇧🇷", "Interlagos": "🇧🇷",
   // Middle East
   "Qatar": "🇶🇦", "Losail": "🇶🇦", "Lusail": "🇶🇦",
-  "Abu Dhabi": "🇦🇪", "United Arab Emirates": "🇦🇪", "UAE": "🇦🇪", "Yas Marina": "🇦🇪"
+  "Abu Dhabi": "🇦🇪", "United Arab Emirates": "🇦🇪", "UAE": "🇦🇪", "Yas Marina": "🇦🇪",
+  // Portugal & Turkey
+  "Portugal": "🇵🇹", "Portuguese": "🇵🇹", "Portimão": "🇵🇹", "Portimao": "🇵🇹", "Algarve": "🇵🇹",
+  "Turkey": "🇹🇷", "Turkish": "🇹🇷", "Türkiye": "🇹🇷", "Istanbul": "🇹🇷", "Istanbul Park": "🇹🇷"
 };
 
 const TEAM_COLORS = {
@@ -164,8 +167,12 @@ function getDriverMeta(driverNumber, apiMap = {}) {
 }
 
 // ============================================================
-// STATE
+// STATE & SEASONS
 // ============================================================
+const ACTIVE_SEASON_YEAR = 2026;
+const SUPPORTED_SEASONS = [2026, 2027];
+let currentSeasonYear = ACTIVE_SEASON_YEAR;
+
 let currentSettings = null;
 let allRaces = [];
 let actualNextRaceIndex = 0;
@@ -180,6 +187,41 @@ let resultsSubTab = "race";
 let latestQualifyingData = null;
 
 // ============================================================
+// SEASON DISPLAY & DATE UTILITIES
+// ============================================================
+function updateSeasonUI() {
+  const el = document.getElementById("season-display");
+  if (!el) return;
+  const newYear = String(currentSeasonYear);
+  if (el.textContent !== newYear) {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(-2px)';
+    setTimeout(() => {
+      el.textContent = newYear;
+      el.style.opacity = '1';
+      el.style.transform = 'translateY(0)';
+    }, 90);
+  }
+}
+
+function formatConfirmedDate(dateStr) {
+  if (!dateStr) return '';
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  return dt.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function getDaysUntil(dateStr) {
+  if (!dateStr) return 0;
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const targetDate = new Date(y, m - 1, d);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diffMs = targetDate.getTime() - today.getTime();
+  return Math.max(0, Math.ceil(diffMs / (24 * 60 * 60 * 1000)));
+}
+
+// ============================================================
 // INITIALIZATION
 // ============================================================
 document.addEventListener('DOMContentLoaded', async () => {
@@ -189,6 +231,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await loadSettings();
   await loadDismissedNotifs();
+
+  try {
+    const storedSeason = await api.storage.local.get("selectedSeason");
+    if (storedSeason?.selectedSeason && SUPPORTED_SEASONS.includes(Number(storedSeason.selectedSeason))) {
+      currentSeasonYear = Number(storedSeason.selectedSeason);
+    }
+  } catch (_) {}
+  updateSeasonUI();
+
   await loadScheduleData();
   await updateNotificationsBadge();
 });
@@ -349,29 +400,79 @@ function setupNavigation() {
 // ============================================================
 async function loadScheduleData() {
   let loadedFromCache = false;
+  const cacheKey = "f1_cached_schedule_combined";
 
   // 1. Try to load and render from local cache first for instant offline/startup display
   try {
-    const cached = await api.storage.local.get("f1_cached_schedule");
-    if (cached.f1_cached_schedule?.data && Array.isArray(cached.f1_cached_schedule.data) && cached.f1_cached_schedule.data.length > 0) {
-      allRaces = cached.f1_cached_schedule.data;
+    const cached = await api.storage.local.get([cacheKey, "f1_cached_schedule"]);
+    const cacheData = cached[cacheKey]?.data || cached.f1_cached_schedule?.data;
+    if (cacheData && Array.isArray(cacheData) && cacheData.length > 0) {
+      allRaces = cacheData;
       findNextRaceIndex();
       renderRoundIndex(actualNextRaceIndex);
       loadedFromCache = true;
     }
   } catch (_) {}
 
-  // 2. Fetch fresh data from network if online
+  // 2. Fetch fresh data for both seasons
   try {
-    const res = await fetch(`https://f1.trionine.com/api/current.json?_t=${Date.now()}`);
-    if (!res.ok) throw new Error('Calendar fetch failed');
-    const data = await res.json();
-    const races = data?.MRData?.RaceTable?.Races || [];
+    const [res2026, res2027] = await Promise.all([
+      fetch(`https://f1.trionine.com/api/current.json?_t=${Date.now()}`).catch(() => null),
+      fetch(`https://f1.trionine.com/api/2027.json?_t=${Date.now()}`).catch(() => null)
+    ]);
 
-    if (races.length > 0) {
-      allRaces = races;
+    let races2026 = [];
+    if (res2026 && res2026.ok) {
+      const data2026 = await res2026.json();
+      races2026 = data2026?.MRData?.RaceTable?.Races || [];
+    }
+
+    let races2027 = [];
+    if (res2027 && res2027.ok) {
+      const data2027 = await res2027.json();
+      races2027 = data2027?.MRData?.RaceTable?.Races || [];
+    }
+
+    // Bundled fallback for 2027 if network fetch failed or returned empty
+    if (!races2027 || races2027.length === 0) {
+      try {
+        const bundledAssetUrl = (typeof api !== 'undefined' && api?.runtime?.getURL)
+          ? api.runtime.getURL('assets/2027.json')
+          : 'assets/2027.json';
+        const assetRes = await fetch(bundledAssetUrl);
+        if (assetRes.ok) {
+          const assetData = await assetRes.json();
+          races2027 = assetData?.MRData?.RaceTable?.Races || [];
+        }
+      } catch (_) {}
+    }
+
+    // Fallback for 2026 from existing cache if 2026 fetch failed
+    if ((!races2026 || races2026.length === 0) && allRaces && allRaces.length > 0) {
+      races2026 = allRaces.filter(r => r.season === "2026");
+    }
+
+    // Tag seasons & totals
+    const total2026 = races2026.length || 24;
+    races2026.forEach(r => {
+      r.season = "2026";
+      r.seasonTotal = total2026;
+    });
+
+    const total2027 = races2027.length || 24;
+    races2027.forEach(r => {
+      r.season = "2027";
+      r.seasonTotal = total2027;
+      r.tbc = true;
+    });
+
+    const combined = [...races2026, ...races2027];
+
+    if (combined.length > 0) {
+      allRaces = combined;
       await api.storage.local.set({
-        f1_cached_schedule: { timestamp: Date.now(), data: races }
+        [cacheKey]: { timestamp: Date.now(), data: combined },
+        f1_cached_schedule: { timestamp: Date.now(), data: combined }
       });
       findNextRaceIndex();
       renderRoundIndex(actualNextRaceIndex);
@@ -379,7 +480,7 @@ async function loadScheduleData() {
     }
   } catch (err) {
     if (!loadedFromCache) {
-      document.getElementById('hero-race-name').textContent = 'F1 Dash (Offline)';
+      document.getElementById('hero-race-name').textContent = 'F1 Dash';
       document.getElementById('hero-circuit').textContent = 'Connect to internet to load calendar';
     }
   }
@@ -392,6 +493,7 @@ function findNextRaceIndex() {
   for (let i = 0; i < allRaces.length; i++) {
     const sessions = extractRaceSessions(allRaces[i]);
     const lastSession = sessions[sessions.length - 1];
+    if (!lastSession) continue;
     const dur = SESSION_DURATIONS[lastSession.type] || (120 * 60 * 1000);
     if ((lastSession.t + dur) > now) {
       found = i;
@@ -405,22 +507,40 @@ function findNextRaceIndex() {
 function extractRaceSessions(race) {
   const sessions = [];
 
-  function add(type, code, name, d, t) {
+  function add(type, code, name, sessOrDate, time, isTbc) {
+    if (!sessOrDate) return;
+    let d, t, tbcFlag;
+    if (typeof sessOrDate === 'object') {
+      d = sessOrDate.date;
+      t = sessOrDate.time;
+      tbcFlag = Boolean(sessOrDate.tbc || race.tbc);
+    } else {
+      d = sessOrDate;
+      t = time;
+      tbcFlag = Boolean(isTbc || race.tbc);
+    }
     if (!d) return;
     const timeClean = t ? t.replace('Z', '') : '12:00:00';
     const dateObj = new Date(`${d}T${timeClean}Z`);
     if (!isNaN(dateObj.getTime())) {
-      sessions.push({ type, code, name, t: dateObj.getTime() });
+      sessions.push({
+        type,
+        code,
+        name,
+        dateStr: d,
+        t: dateObj.getTime(),
+        tbc: tbcFlag
+      });
     }
   }
 
-  add('fp', 'FP1', 'Practice 1', race.FirstPractice?.date, race.FirstPractice?.time);
-  add('sq', 'SQ', 'Sprint Qualifying', race.SprintQualifying?.date, race.SprintQualifying?.time);
-  add('fp', 'FP2', 'Practice 2', race.SecondPractice?.date, race.SecondPractice?.time);
-  add('sprint', 'Sprint', 'Sprint Race', race.Sprint?.date, race.Sprint?.time);
-  add('fp', 'FP3', 'Practice 3', race.ThirdPractice?.date, race.ThirdPractice?.time);
-  add('quali', 'Quali', 'Qualifying', race.Qualifying?.date, race.Qualifying?.time);
-  add('race', 'Race', 'Grand Prix', race.date, race.time);
+  add('fp', 'FP1', 'Practice 1', race.FirstPractice);
+  add('sq', 'SQ', 'Sprint Qualifying', race.SprintQualifying);
+  add('fp', 'FP2', 'Practice 2', race.SecondPractice);
+  add('sprint', 'Sprint', 'Sprint Race', race.Sprint);
+  add('fp', 'FP3', 'Practice 3', race.ThirdPractice);
+  add('quali', 'Quali', 'Qualifying', race.Qualifying);
+  add('race', 'Race', 'Grand Prix', race.date, race.time, race.tbc);
 
   sessions.sort((a, b) => a.t - b.t);
   return sessions;
@@ -442,11 +562,13 @@ function renderRoundIndex(idx) {
   const race = allRaces[idx];
   if (!race) return;
 
-  const total = allRaces.length;
+  const raceSeason = race.season || (idx >= 23 ? "2027" : "2026");
+  currentSeasonYear = Number(raceSeason);
+  updateSeasonUI();
+
+  const total = race.seasonTotal || 24;
   const badge = document.getElementById('hero-round-badge');
   if (badge) badge.textContent = `ROUND ${race.round} OF ${total}`;
-
-  
 
   const returnBtn = document.getElementById('btn-return-next');
   if (returnBtn) {
@@ -481,6 +603,9 @@ function renderRoundIndex(idx) {
   if (heroTime) {
     if (liveSess) {
       setSafeContent(heroTime, `<span style="color: var(--f1red); font-weight: 800;">● ${liveSess.name} IS LIVE NOW</span>`);
+    } else if (targetSess.tbc) {
+      const dateFormatted = formatConfirmedDate(targetSess.dateStr);
+      heroTime.textContent = `${targetSess.name} • ${dateFormatted} (Times TBC)`;
     } else {
       const dateStr = new Date(targetSess.t).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
       const timeStr = new Date(targetSess.t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -503,25 +628,34 @@ function renderSessionList(sessions, activeTarget, liveSess) {
   setSafeContent(container, sessions.map(s => {
     const dur = SESSION_DURATIONS[s.type] || (60 * 60 * 1000);
     const isLive = now >= s.t && now < s.t + dur;
-    const isPast = s.t + dur < now;
+    const isPast = !s.tbc && (s.t + dur < now);
     const isTarget = isLive || (activeTarget && s.code === activeTarget.code && s.t === activeTarget.t);
 
-    const timeStr = new Date(s.t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const dayStr = new Date(s.t).toLocaleDateString([], { weekday: 'short' });
+    let mainTimeLine = '';
+    let subTimeLine = '';
 
-    let relText = '';
-    if (isLive) {
-      relText = '<span style="color: var(--f1red); font-weight: 800;">● LIVE NOW</span>';
-    } else if (isPast) {
-      relText = 'Finished';
+    if (s.tbc) {
+      mainTimeLine = formatConfirmedDate(s.dateStr);
+      subTimeLine = 'Time TBC';
     } else {
-      const diffMs = s.t - now;
-      const hours = Math.floor(diffMs / 3600000);
-      const days = Math.floor(hours / 24);
-      relText = days > 0 ? `in ${days}d ${hours % 24}h` : `in ${hours}h`;
+      const timeStr = new Date(s.t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const dayStr = new Date(s.t).toLocaleDateString([], { weekday: 'short' });
+      mainTimeLine = `${dayStr} ${timeStr}`;
+
+      if (isLive) {
+        subTimeLine = '<span style="color: var(--f1red); font-weight: 800;">● LIVE NOW</span>';
+      } else if (isPast) {
+        subTimeLine = 'Finished';
+      } else {
+        const diffMs = s.t - now;
+        const hours = Math.floor(diffMs / 3600000);
+        const days = Math.floor(hours / 24);
+        subTimeLine = days > 0 ? `in ${days}d ${hours % 24}h` : `in ${hours}h`;
+      }
     }
 
     const isEnabled = currentSettings?.sessions?.[s.type] ?? true;
+    const isAlertDisabled = s.tbc || isPast;
 
     return `
       <div class="session-row ${isTarget ? 'current-target' : ''}">
@@ -532,12 +666,13 @@ function renderSessionList(sessions, activeTarget, liveSess) {
         </div>
         <div class="sess-meta-right">
           <div class="sess-times">
-            <span class="sess-time-main">${dayStr} ${timeStr}</span>
-            <span class="sess-time-rel">${relText}</span>
+            <span class="sess-time-main">${mainTimeLine}</span>
+            <span class="sess-time-rel">${subTimeLine}</span>
           </div>
-          <button class="sess-alert-btn ${isEnabled && !isPast ? '' : 'muted'}" 
+          <button class="sess-alert-btn ${isEnabled && !isAlertDisabled ? '' : 'muted'}" 
                   data-type="${s.type}" 
-                  title="${isEnabled ? 'Alarm active (Click to toggle)' : 'Alarm disabled (Click to enable)'}">
+                  ${s.tbc ? 'disabled' : ''}
+                  title="${s.tbc ? 'Alerts available once start times are confirmed' : (isEnabled && !isPast ? 'Alarm active (Click to toggle)' : 'Alarm disabled')}">
             ${BELL_SVG}
           </button>
         </div>
@@ -545,7 +680,7 @@ function renderSessionList(sessions, activeTarget, liveSess) {
     `;
   }).join(''));
 
-  container.querySelectorAll('.sess-alert-btn').forEach(btn => {
+  container.querySelectorAll('.sess-alert-btn:not([disabled])').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const type = btn.getAttribute('data-type');
@@ -563,6 +698,37 @@ function renderSessionList(sessions, activeTarget, liveSess) {
 function startCountdown(sess, sessions = [], previousRaceFinalSession = null) {
   if (countdownTimer) clearInterval(countdownTimer);
 
+  const countdownGrid = document.getElementById('countdown-grid');
+  const dateOnlyBox = document.getElementById('countdown-date-only');
+  const progress = document.getElementById('countdown-progress');
+  const progressFill = document.getElementById('countdown-progress-fill');
+
+  // If session time is TBC (date-only), show Days to Go banner and hide ticking clock/progress
+  if (sess.tbc) {
+    if (countdownGrid) countdownGrid.style.display = 'none';
+    if (dateOnlyBox) dateOnlyBox.style.display = 'flex';
+    if (progress) progress.style.display = 'none';
+
+    const daysLeft = getDaysUntil(sess.dateStr);
+    const [y, m, d] = (sess.dateStr || '').split('-').map(Number);
+    const dateFormatted = (!isNaN(y) && !isNaN(m) && !isNaN(d))
+      ? new Date(y, m - 1, d).toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' })
+      : '';
+
+    const tbcDaysEl = document.getElementById('cd-tbc-days');
+    const tbcLabel = document.getElementById('cd-tbc-label');
+    const tbcDateEl = document.getElementById('cd-tbc-date');
+    if (tbcDaysEl) tbcDaysEl.textContent = String(daysLeft);
+    if (tbcLabel) tbcLabel.textContent = daysLeft === 1 ? 'DAY TO GO' : 'DAYS TO GO';
+    if (tbcDateEl) tbcDateEl.textContent = dateFormatted;
+    return;
+  }
+
+  // Confirmed time: show live digital clock numerals and progress bar
+  if (countdownGrid) countdownGrid.style.display = 'flex';
+  if (dateOnlyBox) dateOnlyBox.style.display = 'none';
+  if (progress) progress.style.display = 'block';
+
   const targetIndex = sessions.findIndex(s => s.code === sess.code && s.t === sess.t);
   const previousSession = targetIndex > 0
     ? sessions[targetIndex - 1]
@@ -572,8 +738,6 @@ function startCountdown(sess, sessions = [], previousRaceFinalSession = null) {
     ? previousSession.t + previousDuration
     : sess.t - (7 * 24 * 60 * 60 * 1000);
   const progressRange = Math.max(sess.t - progressStart, 1);
-  const progress = document.getElementById('countdown-progress');
-  const progressFill = document.getElementById('countdown-progress-fill');
 
   function update() {
     const now = Date.now();
@@ -614,6 +778,18 @@ function startCountdown(sess, sessions = [], previousRaceFinalSession = null) {
 // ============================================================
 async function loadStandings() {
   const container = document.getElementById('standings-container');
+  if (currentSeasonYear !== ACTIVE_SEASON_YEAR) {
+    if (container) {
+      setSafeContent(container, `
+        <div class="empty-standings-notice" style="text-align: center; padding: 48px 24px; color: var(--text-sub);">
+          <div style="font-size: 28px; margin-bottom: 12px;">🏆</div>
+          <div style="font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 6px;">${currentSeasonYear} Season Standings</div>
+          <div style="font-size: 12px; line-height: 1.5;">Championship standings will be available once the ${currentSeasonYear} season gets underway. Switch back to 2026 to view current standings.</div>
+        </div>
+      `);
+    }
+    return;
+  }
   let loadedFromCache = false;
 
   if (!standingsData) {
@@ -915,6 +1091,23 @@ async function loadResults() {
   const raceSection = document.getElementById("results-race-section");
   const gridSection = document.getElementById("results-grid-section");
   const heroCard = document.getElementById("results-hero-card");
+
+  if (currentSeasonYear !== ACTIVE_SEASON_YEAR) {
+    if (heroCard) heroCard.style.display = "none";
+    if (segControl) segControl.style.display = "none";
+    if (gridSection) gridSection.style.display = "none";
+    if (raceSection) raceSection.style.display = "flex";
+    if (container) {
+      setSafeContent(container, `
+        <div class="empty-results-notice" style="text-align: center; padding: 48px 24px; color: var(--text-sub);">
+          <div style="font-size: 28px; margin-bottom: 12px;">🏁</div>
+          <div style="font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 6px;">${currentSeasonYear} Race Results</div>
+          <div style="font-size: 12px; line-height: 1.5;">Official Grand Prix and Sprint results will appear here after each round in ${currentSeasonYear}. Switch to 2026 to view completed races.</div>
+        </div>
+      `);
+    }
+    return;
+  }
 
   let loadedFromCache = false;
 
@@ -1696,6 +1889,27 @@ async function loadLiveTelemetry() {
   const tower = document.getElementById("timing-tower-list");
   const statusPill = document.getElementById("track-status-pill");
   const statusLabel = document.getElementById("track-status-label");
+
+  if (currentSeasonYear !== ACTIVE_SEASON_YEAR) {
+    if (statusPill && statusLabel) {
+      statusPill.className = "status-pill status-dim";
+      statusLabel.textContent = "UPCOMING";
+    }
+    const towerCard = document.getElementById("live-timing-tower");
+    if (towerCard) {
+      towerCard.style.display = "block";
+    }
+    if (tower) {
+      setSafeContent(tower, `
+        <div class="live-empty-state" style="text-align: center; padding: 48px 24px; color: var(--text-sub);">
+          <div style="font-size: 28px; margin-bottom: 12px;">📡</div>
+          <div style="font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 6px;">No Live Timing for ${currentSeasonYear}</div>
+          <div style="font-size: 12px; line-height: 1.5;">Live telemetry and race tracking will activate during live ${currentSeasonYear} sessions. Switch back to 2026 to track current events.</div>
+        </div>
+      `);
+    }
+    return;
+  }
 
   if (!navigator.onLine) {
     if (statusPill && statusLabel) {

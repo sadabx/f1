@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
-  <title>F1 Live Dashboard | Formula 1 Race Schedule & Standings</title>
+  <title>F1 Live Dashboard</title>
 
   <!-- SEO Meta Tags -->
   <meta name="description"
@@ -31,10 +31,23 @@
 <body>
   <header class="top-bar">
     <h1>
-      <svg class="f1-official-logo-header" viewBox="0 0 120 30" aria-label="Formula 1 Logo" onclick="if (window.innerWidth <= 650) toggleRel();" title="Toggle Relative Time">
-        <path d="M89.9999375,30 L119.999937,0 L101.943687,0 L71.9443125,30 L89.9999375,30 Z M85.6986875,13.065 L49.3818125,13.065 C38.3136875,13.065 36.3768125,13.651875 31.6361875,18.3925 C27.2024375,22.82625 20.0005625,30 20.0005625,30 L35.7324375,30 L39.4855625,26.246875 C41.9530625,23.779375 43.2255625,23.52375 48.4068125,23.52375 L75.2405625,23.52375 L85.6986875,13.065 Z M31.1518125,16.253125 C27.8774375,19.3425 20.7530625,26.263125 16.9130625,30 L-6.25e-05,30 C-6.25e-05,30 13.5524375,16.486875 21.0849375,9.0725 C28.8455625,1.685 32.7143125,0 46.9486875,0 L98.7643125,0 L87.5449375,11.21875 L48.0011875,11.21875 C37.9993125,11.21875 35.7518125,11.911875 31.1518125,16.253125 Z" fill="var(--f1red)"/>
+      <svg class="f1-official-logo-header" viewBox="0 0 120 30" aria-label="Formula 1 Logo"
+        onclick="if (window.innerWidth <= 650) toggleRel();" title="Toggle Relative Time">
+        <path
+          d="M89.9999375,30 L119.999937,0 L101.943687,0 L71.9443125,30 L89.9999375,30 Z M85.6986875,13.065 L49.3818125,13.065 C38.3136875,13.065 36.3768125,13.651875 31.6361875,18.3925 C27.2024375,22.82625 20.0005625,30 20.0005625,30 L35.7324375,30 L39.4855625,26.246875 C41.9530625,23.779375 43.2255625,23.52375 48.4068125,23.52375 L75.2405625,23.52375 L85.6986875,13.065 Z M31.1518125,16.253125 C27.8774375,19.3425 20.7530625,26.263125 16.9130625,30 L-6.25e-05,30 C-6.25e-05,30 13.5524375,16.486875 21.0849375,9.0725 C28.8455625,1.685 32.7143125,0 46.9486875,0 L98.7643125,0 L87.5449375,11.21875 L48.0011875,11.21875 C37.9993125,11.21875 35.7518125,11.911875 31.1518125,16.253125 Z"
+          fill="var(--f1red)" />
       </svg>
-      <span id="year-display">Live</span> Season Dashboard
+      <span class="season-switcher" id="season-switcher">
+        <button type="button" id="year-display" class="season-trigger" onclick="toggleSeasonMenu(event)"
+          aria-haspopup="true" aria-expanded="false" title="Switch F1 Season">2026</button>
+        <div class="season-menu" id="season-menu" role="menu" aria-label="Select Season">
+          <button type="button" class="season-option on" data-year="2026" onclick="selectSeason(2026)"
+            role="menuitem">2026</button>
+          <button type="button" class="season-option" data-year="2027" onclick="selectSeason(2027)"
+            role="menuitem">2027</button>
+        </div>
+      </span>
+      <span>Season Dashboard</span>
     </h1>
     <nav class="controls" aria-label="Dashboard Controls">
       <div class="pill" id="btn-past" onclick="togglePast()" role="button" tabindex="0">
@@ -104,6 +117,13 @@
           <div class="tab" id="t-res" onclick="switchTab('res')">Results</div>
         </div>
 
+        <div class="stand-toggle-bar" id="stand-toggle-bar">
+          <div class="stand-toggle" role="group" aria-label="Standings Category">
+            <button type="button" class="stand-tog-btn on" id="btn-std-drivers" onclick="setStandingsView('drivers')">Drivers</button>
+            <button type="button" class="stand-tog-btn" id="btn-std-teams" onclick="setStandingsView('constructors')">Constructors</button>
+          </div>
+        </div>
+
         <div class="tc" id="tc-grd">
           <div id="grid-skeleton" class="skeleton-loading">
             <div class="grid-row" style="opacity: 0.6">
@@ -133,7 +153,7 @@
         <div class="tc on" id="tc-std">
           <div id="standings-skeleton" class="skeleton-loading">
             <div class="stand-row" style="opacity: 0.7">
-              <span class="s-pos skeleton-inline" style="width: 30px"></span>
+              <span class="s-pos skeleton-inline" style="width: 22px"></span>
               <div class="s-info">
                 <div class="s-top">
                   <span class="s-name skeleton-inline" style="width: 80px"></span>
@@ -146,7 +166,7 @@
               </div>
             </div>
             <div class="stand-row" style="opacity: 0.6">
-              <span class="s-pos skeleton-inline" style="width: 30px"></span>
+              <span class="s-pos skeleton-inline" style="width: 22px"></span>
               <div class="s-info">
                 <div class="s-top">
                   <span class="s-name skeleton-inline" style="width: 80px"></span>
@@ -159,7 +179,7 @@
               </div>
             </div>
             <div class="stand-row" style="opacity: 0.5">
-              <span class="s-pos skeleton-inline" style="width: 30px"></span>
+              <span class="s-pos skeleton-inline" style="width: 22px"></span>
               <div class="s-info">
                 <div class="s-top">
                   <span class="s-name skeleton-inline" style="width: 80px"></span>
@@ -195,26 +215,31 @@
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-head">Season at a glance</div>
-        <div class="stat-grid">
-          <div class="stat">
-            <div class="stat-label">Races done</div>
-            <div class="stat-val" id="s-done">—</div>
+      <div class="panel ext-panel" id="panel-extension">
+        <div class="panel-head ext-panel-head">
+          <span>Browser Extension</span>
+        </div>
+        <div class="ext-body">
+          <div class="ext-brand-row">
+            <span class="ext-brand-title">F1 DASH</span>
           </div>
-          <div class="stat">
-            <div class="stat-label">Races left</div>
-            <div class="stat-val" id="s-left">—</div>
-          </div>
-          <div class="stat">
-            <div class="stat-label">Leader</div>
-            <div class="stat-val sm" id="s-leader">—</div>
-            <div class="stat-sub" id="s-leader-pts"></div>
-          </div>
-          <div class="stat">
-            <div class="stat-label">Next up</div>
-            <div class="stat-val sm" id="s-next">—</div>
-            <div class="stat-sub" id="s-next-r"></div>
+
+          <p class="ext-desc">
+            Live session countdowns, a real-time timing tower, standings and race results, all in your toolbar, with
+            audio alarms before every green light.
+          </p>
+
+          <div class="ext-action-row">
+            <a id="ext-install-btn" href="https://addons.mozilla.org/firefox/addon/f1-dash/" target="_blank"
+              rel="noopener noreferrer" class="btn-ext-primary">
+              <span id="ext-install-text">Add to Firefox</span>
+              <span class="btn-ext-arrow">↗</span>
+            </a>
+            <div class="ext-platforms">
+              <span class="ext-alt-label">Available for</span>
+              <a id="ext-secondary-link" href="https://github.com/sadabx/f1/releases" target="_blank"
+                rel="noopener noreferrer" class="ext-alt-link">Chrome, Brave & Edge ↗</a>
+            </div>
           </div>
         </div>
       </div>
@@ -234,7 +259,9 @@
       <div class="footer-brand">
         <div class="footer-logo">
           <svg class="f1-official-logo-footer" viewBox="0 0 120 30" aria-label="Formula 1 Logo">
-            <path d="M89.9999375,30 L119.999937,0 L101.943687,0 L71.9443125,30 L89.9999375,30 Z M85.6986875,13.065 L49.3818125,13.065 C38.3136875,13.065 36.3768125,13.651875 31.6361875,18.3925 C27.2024375,22.82625 20.0005625,30 20.0005625,30 L35.7324375,30 L39.4855625,26.246875 C41.9530625,23.779375 43.2255625,23.52375 48.4068125,23.52375 L75.2405625,23.52375 L85.6986875,13.065 Z M31.1518125,16.253125 C27.8774375,19.3425 20.7530625,26.263125 16.9130625,30 L-6.25e-05,30 C-6.25e-05,30 13.5524375,16.486875 21.0849375,9.0725 C28.8455625,1.685 32.7143125,0 46.9486875,0 L98.7643125,0 L87.5449375,11.21875 L48.0011875,11.21875 C37.9993125,11.21875 35.7518125,11.911875 31.1518125,16.253125 Z" fill="var(--f1red)"/>
+            <path
+              d="M89.9999375,30 L119.999937,0 L101.943687,0 L71.9443125,30 L89.9999375,30 Z M85.6986875,13.065 L49.3818125,13.065 C38.3136875,13.065 36.3768125,13.651875 31.6361875,18.3925 C27.2024375,22.82625 20.0005625,30 20.0005625,30 L35.7324375,30 L39.4855625,26.246875 C41.9530625,23.779375 43.2255625,23.52375 48.4068125,23.52375 L75.2405625,23.52375 L85.6986875,13.065 Z M31.1518125,16.253125 C27.8774375,19.3425 20.7530625,26.263125 16.9130625,30 L-6.25e-05,30 C-6.25e-05,30 13.5524375,16.486875 21.0849375,9.0725 C28.8455625,1.685 32.7143125,0 46.9486875,0 L98.7643125,0 L87.5449375,11.21875 L48.0011875,11.21875 C37.9993125,11.21875 35.7518125,11.911875 31.1518125,16.253125 Z"
+              fill="var(--f1red)" />
           </svg>
           <span class="logo-tv">DASH</span>
         </div>
@@ -247,7 +274,9 @@
       <div class="footer-links">
         <div class="footer-col-label">Extension & Links</div>
         <a href="#">Home</a>
-        <a href="https://addons.mozilla.org/firefox/addon/f1-dash/" target="_blank" rel="noopener noreferrer">Firefox Add-on ↗</a>
+        <a href="https://addons.mozilla.org/firefox/addon/f1-dash/" target="_blank" rel="noopener noreferrer">Firefox
+          Add-on ↗</a>
+        <a href="https://github.com/sadabx/f1/releases" target="_blank" rel="noopener noreferrer">Chromium Release ↗</a>
         <a href="https://discord.gg/JxZ4RS4Y7x" target="_blank" rel="noopener noreferrer">Discord ↗</a>
         <a href="https://github.com/sadabx/f1" target="_blank" rel="noopener noreferrer">Contribute on GitHub ↗</a>
       </div>

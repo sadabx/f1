@@ -196,6 +196,16 @@ function cleanDriver(driver) {
 // ============================================================
 // GLOBAL STATE
 // ============================================================
+const ACTIVE_SEASON_YEAR = 2026;
+const SUPPORTED_SEASONS = [2026, 2027];
+
+function getInitialSeason() {
+  const saved = parseInt(localStorage.getItem("selectedSeason") || "", 10);
+  if (SUPPORTED_SEASONS.includes(saved)) return saved;
+  const nowYear = new Date().getFullYear();
+  return SUPPORTED_SEASONS.includes(nowYear) ? nowYear : ACTIVE_SEASON_YEAR;
+}
+
 let showPast = false,
   showRel = localStorage.getItem('showRel') === 'true',
   races = [],
@@ -207,7 +217,8 @@ let showPast = false,
   cdInt,
   isFirstLoad = true,
   wasMobile = window.innerWidth <= 800,
-  currentSeasonYear = new Date().getFullYear();
+  currentSeasonYear = getInitialSeason(),
+  standingsViewMode = "drivers";
 
 document.getElementById("btn-rel").classList.toggle("on", showRel);
 
@@ -219,6 +230,9 @@ window.togglePast = togglePast;
 window.switchTab = switchTab;
 window.toggleCard = toggleCard;
 window.toggleSection = toggleSection;
+window.toggleSeasonMenu = toggleSeasonMenu;
+window.selectSeason = selectSeason;
+window.setStandingsView = setStandingsView;
 
 // ============================================================
 // UTILITY FUNCTIONS
@@ -226,6 +240,41 @@ window.toggleSection = toggleSection;
 function shortNamePlain(driver) {
   const first = driver.givenName.split(' ').pop();
   return `${first} ${driver.familyName}`;
+}
+
+function parseDateOnly(dateStr) {
+  if (!dateStr) return null;
+  const parts = String(dateStr).split('-');
+  if (parts.length < 3) return null;
+  const y = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10);
+  const d = parseInt(parts[2], 10);
+  if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
+  return new Date(y, m - 1, d);
+}
+
+function formatDateOnly(dateStr) {
+  const dt = parseDateOnly(dateStr);
+  if (!dt) return dateStr || '';
+  return dt.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function getDaysUntilDate(dateStr) {
+  const target = parseDateOnly(dateStr);
+  if (!target) return 0;
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diffMs = target.getTime() - today.getTime();
+  return Math.max(0, Math.ceil(diffMs / (24 * 60 * 60 * 1000)));
+}
+
+function getRaceEffectiveTimestamp(race) {
+  if (!race) return Infinity;
+  if (race.tbc) {
+    const dt = parseDateOnly(race.date);
+    return dt ? dt.getTime() + (24 * 60 * 60 * 1000) : Infinity;
+  }
+  return ts(race.date, race.time) + (120 * 60 * 1000);
 }
 
 function ts(d, t) {
@@ -268,20 +317,69 @@ async function fetchOpenF1Sessions(year) {
 }
 
 // ============================================================
-// API: Custom - Race Schedule
+// API: Custom - Race Schedule (with Sportstimes fallback)
 // ============================================================
-async function fetchCustomSchedule() {
+function parseSportstimesSession(timestamp) {
+  if (!timestamp) return null;
+  if (timestamp.includes("T")) {
+    const [date, time] = timestamp.split("T");
+    return { date, time, tbc: false };
+  }
+  return { date: timestamp, time: null, tbc: true };
+}
+
+function normalizeSportstimesCalendar(data, seasonYear) {
+  const list = Array.isArray(data?.races) ? data.races : [];
+  return list.map((item, idx) => {
+    const sessions = item.sessions || {};
+    const gpParsed = parseSportstimesSession(sessions.gp);
+    const isTbc = !gpParsed || Boolean(gpParsed.tbc) || !gpParsed.time;
+    const raceObj = {
+      season: String(seasonYear),
+      round: String(item.round || idx + 1),
+      raceName: normalizeRaceName(item.name || "Grand Prix"),
+      date: gpParsed ? gpParsed.date : (item.date || `${seasonYear}-01-01`),
+      time: gpParsed ? gpParsed.time : null,
+      tbc: isTbc,
+      Circuit: { circuitName: item.location || "Official Circuit" }
+    };
+
+    if (sessions.fp1) raceObj.FirstPractice = parseSportstimesSession(sessions.fp1);
+    if (sessions.fp2) raceObj.SecondPractice = parseSportstimesSession(sessions.fp2);
+    if (sessions.fp3) raceObj.ThirdPractice = parseSportstimesSession(sessions.fp3);
+    if (sessions.sprintQualifying) raceObj.SprintQualifying = parseSportstimesSession(sessions.sprintQualifying);
+    else if (sessions.sprintShootout) raceObj.SprintQualifying = parseSportstimesSession(sessions.sprintShootout);
+    if (sessions.sprint) raceObj.Sprint = parseSportstimesSession(sessions.sprint);
+    if (sessions.qualifying) raceObj.Qualifying = parseSportstimesSession(sessions.qualifying);
+
+    return raceObj;
+  });
+}
+
+async function fetchCustomSchedule(seasonYear = currentSeasonYear) {
+  const localUrl = Number(seasonYear) === ACTIVE_SEASON_YEAR ? CALENDAR_URL : `api/${seasonYear}.json`;
   try {
-    const res = await fetch(CALENDAR_URL);
-    if (!res.ok) throw new Error(`Custom API HTTP ${res.status}`);
-    const data = await res.json();
-    const races = data.MRData.RaceTable.Races || [];
-    races.forEach(r => {
-      r.raceName = normalizeRaceName(r.raceName);
-    });
-    return races;
+    const res = await fetch(localUrl);
+    if (res.ok) {
+      const data = await res.json();
+      const races = data?.MRData?.RaceTable?.Races || [];
+      races.forEach(r => {
+        r.raceName = normalizeRaceName(r.raceName);
+      });
+      if (races.length > 0) return races;
+    }
   } catch (e) {
-    console.error("❌ Custom schedule fetch failed:", e);
+    console.warn(`⚠️ Local schedule fetch failed for ${seasonYear}, trying upstream:`, e);
+  }
+
+  // Fallback directly to Sportstimes community DB (especially useful for 2027 preview before next API build)
+  try {
+    const rawRes = await fetch(`https://raw.githubusercontent.com/sportstimes/f1/main/_db/f1/${seasonYear}.json`);
+    if (!rawRes.ok) throw new Error(`Sportstimes HTTP ${rawRes.status}`);
+    const rawData = await rawRes.json();
+    return normalizeSportstimesCalendar(rawData, seasonYear);
+  } catch (e) {
+    console.error(`❌ Custom schedule fetch failed for ${seasonYear}:`, e);
     return [];
   }
 }
@@ -473,6 +571,10 @@ function switchTab(t) {
       content.classList.toggle("on", x === t);
     }
   });
+  const toggleBar = document.getElementById("stand-toggle-bar");
+  if (toggleBar) {
+    toggleBar.style.display = t === "std" ? "flex" : "none";
+  }
 }
 
 function toggleCard(id) {
@@ -491,6 +593,47 @@ function toggleSection(id) {
   if (chev) chev.classList.toggle("open");
 }
 
+function updateSeasonUI() {
+  const trigger = document.getElementById("year-display");
+  if (trigger) trigger.textContent = currentSeasonYear;
+
+  document.title = `F1 ${currentSeasonYear} Dashboard | Formula 1 Race Schedule & Standings`;
+  document.querySelectorAll(".season-option").forEach((opt) => {
+    opt.classList.toggle("on", Number(opt.dataset.year) === Number(currentSeasonYear));
+  });
+}
+
+function closeSeasonMenu() {
+  const menu = document.getElementById("season-menu");
+  const trigger = document.getElementById("year-display");
+  if (menu) menu.classList.remove("open");
+  if (trigger) trigger.setAttribute("aria-expanded", "false");
+}
+
+function toggleSeasonMenu(event) {
+  if (event) event.stopPropagation();
+  const menu = document.getElementById("season-menu");
+  const trigger = document.getElementById("year-display");
+  if (!menu) return;
+  const isOpen = menu.classList.toggle("open");
+  if (trigger) trigger.setAttribute("aria-expanded", isOpen ? "true" : "false");
+}
+
+function selectSeason(year) {
+  const targetYear = Number(year);
+  closeSeasonMenu();
+  if (!SUPPORTED_SEASONS.includes(targetYear) || targetYear === Number(currentSeasonYear)) {
+    return;
+  }
+  currentSeasonYear = targetYear;
+  localStorage.setItem("selectedSeason", String(targetYear));
+  collapsed = {};
+  isFirstLoad = true;
+  clearInterval(cdInt);
+  updateSeasonUI();
+  fetchAll();
+}
+
 // ============================================================
 // RENDER FUNCTIONS
 // ============================================================
@@ -505,36 +648,53 @@ function render() {
   const titleEl = document.getElementById("title-container");
   if (titleEl) titleEl.style.display = isMobile ? "none" : "block";
 
-  const upcoming = races.filter((r) => ts(r.date, r.time) + (120 * 60 * 1000) > now);
+  const upcoming = races.filter((r) => getRaceEffectiveTimestamp(r) > now);
   const next = upcoming.length
-    ? upcoming.reduce((a, b) => ts(a.date, a.time) < ts(b.date, b.time) ? a : b)
+    ? upcoming.reduce((a, b) => {
+        const timeA = a.tbc ? (parseDateOnly(a.date)?.getTime() || Infinity) : ts(a.date, a.time);
+        const timeB = b.tbc ? (parseDateOnly(b.date)?.getTime() || Infinity) : ts(b.date, b.time);
+        return timeA < timeB ? a : b;
+      })
     : null;
 
   if (next) {
     document.getElementById("countdown").classList.add("show");
-    document.getElementById("cd-name").textContent = getRaceFlag(next.raceName) + " " + next.raceName;
-    document.getElementById("s-next").textContent = next.raceName.replace(" Grand Prix", " GP");
-    document.getElementById("s-next-r").textContent = "Round " + next.round;
+    const flag = getRaceFlag(next.raceName);
+    document.getElementById("cd-name").textContent = (flag ? flag + " " : "") + next.raceName;
     clearInterval(cdInt);
-    cdInt = setInterval(() => {
-      const d = ts(next.date, next.time) - Date.now();
-      if (d < 0) {
-        const duration = 120 * 60 * 1000; // 2 hours
-        if (d > -duration) {
-          document.getElementById("cd-timer").innerHTML = '<a href="https://iptv.trionine.com/sports/f1-live" target="_blank" rel="noopener noreferrer">Live ↗</a>';
-        } else {
-          document.getElementById("cd-timer").textContent = "Finished";
-          clearInterval(cdInt);
-        }
-        return;
+
+    if (next.tbc) {
+      const daysLeft = getDaysUntilDate(next.date);
+      if (daysLeft === 0) {
+        document.getElementById("cd-timer").innerHTML = `<span class="cd-tbc-label">RACE DAY</span>`;
+      } else {
+        const label = daysLeft === 1 ? "DAY TO GO" : "DAYS TO GO";
+        document.getElementById("cd-timer").innerHTML =
+          `<span class="cd-tbc-days">${daysLeft}</span> <span class="cd-tbc-label">${label}</span>`;
       }
-      const dy = Math.floor(d / 864e5),
-        h = Math.floor((d % 864e5) / 36e5),
-        m = Math.floor((d % 36e5) / 6e4),
-        s = Math.floor((d % 6e4) / 1e3);
-      document.getElementById("cd-timer").textContent =
-        `${dy}d ${String(h).padStart(2, "0")}h ${String(m).padStart(2, "0")}m ${String(s).padStart(2, "0")}s`;
-    }, 1000);
+    } else {
+      cdInt = setInterval(() => {
+        const d = ts(next.date, next.time) - Date.now();
+        if (d < 0) {
+          const duration = 120 * 60 * 1000; // 2 hours
+          if (d > -duration) {
+            document.getElementById("cd-timer").innerHTML = '<a href="https://iptv.trionine.com/sports/f1-live" target="_blank" rel="noopener noreferrer">Live ↗</a>';
+          } else {
+            document.getElementById("cd-timer").textContent = "Finished";
+            clearInterval(cdInt);
+          }
+          return;
+        }
+        const dy = Math.floor(d / 864e5),
+          h = Math.floor((d % 864e5) / 36e5),
+          m = Math.floor((d % 36e5) / 6e4),
+          s = Math.floor((d % 6e4) / 1e3);
+        document.getElementById("cd-timer").textContent =
+          `${dy}d ${String(h).padStart(2, "0")}h ${String(m).padStart(2, "0")}m ${String(s).padStart(2, "0")}s`;
+      }, 1000);
+    }
+  } else {
+    document.getElementById("countdown").classList.remove("show");
   }
 
   const gridTabBtn = document.getElementById('t-grd');
@@ -592,14 +752,14 @@ function render() {
   }
   isFirstLoad = false;
 
-  document.getElementById("s-done").textContent = races.filter((r) => ts(r.date, r.time) + (120 * 60 * 1000) < now).length;
-  document.getElementById("s-left").textContent = races.filter((r) => ts(r.date, r.time) + (120 * 60 * 1000) > now).length;
-
   let htmlNext = "", htmlUpcoming = "", htmlPast = "";
 
   races.forEach((r) => {
-    const isLive = ts(r.date, r.time) <= now && ts(r.date, r.time) + (120 * 60 * 1000) > now;
-    const past = ts(r.date, r.time) + (120 * 60 * 1000) < now;
+    const isRaceTbc = Boolean(r.tbc);
+    const isLive = !isRaceTbc && ts(r.date, r.time) <= now && ts(r.date, r.time) + (120 * 60 * 1000) > now;
+    const past = isRaceTbc
+      ? (parseDateOnly(r.date)?.getTime() || Infinity) + (24 * 60 * 60 * 1000) < now
+      : ts(r.date, r.time) + (120 * 60 * 1000) < now;
     const isNext = next && r.raceName === next.raceName;
     const id = r.round;
 
@@ -614,15 +774,26 @@ function render() {
           : '<span class="badge b-soon">Upcoming</span>';
 
     const sess = [];
-    if (r.FirstPractice) sess.push({ n: "FP1", t: ts(r.FirstPractice.date, r.FirstPractice.time), dur: 60 * 60 * 1000 });
-    if (r.SprintQualifying) sess.push({ n: "Sprint Quali", t: ts(r.SprintQualifying.date, r.SprintQualifying.time), dur: 60 * 60 * 1000 });
-    else if (r.SecondPractice) sess.push({ n: "FP2", t: ts(r.SecondPractice.date, r.SecondPractice.time), dur: 60 * 60 * 1000 });
-    if (r.Sprint) sess.push({ n: "Sprint", t: ts(r.Sprint.date, r.Sprint.time), dur: 60 * 60 * 1000 });
-    else if (r.ThirdPractice) sess.push({ n: "FP3", t: ts(r.ThirdPractice.date, r.ThirdPractice.time), dur: 60 * 60 * 1000 });
-    if (r.Qualifying) sess.push({ n: "Qualifying", t: ts(r.Qualifying.date, r.Qualifying.time), dur: 60 * 60 * 1000 });
-    sess.push({ n: "Race", t: ts(r.date, r.time), dur: 120 * 60 * 1000 });
+    if (r.FirstPractice) sess.push({ n: "FP1", date: r.FirstPractice.date || r.date, time: r.FirstPractice.time, tbc: isRaceTbc || Boolean(r.FirstPractice.tbc), t: ts(r.FirstPractice.date, r.FirstPractice.time), dur: 60 * 60 * 1000 });
+    if (r.SprintQualifying) sess.push({ n: "Sprint Quali", date: r.SprintQualifying.date || r.date, time: r.SprintQualifying.time, tbc: isRaceTbc || Boolean(r.SprintQualifying.tbc), t: ts(r.SprintQualifying.date, r.SprintQualifying.time), dur: 60 * 60 * 1000 });
+    else if (r.SecondPractice) sess.push({ n: "FP2", date: r.SecondPractice.date || r.date, time: r.SecondPractice.time, tbc: isRaceTbc || Boolean(r.SecondPractice.tbc), t: ts(r.SecondPractice.date, r.SecondPractice.time), dur: 60 * 60 * 1000 });
+    if (r.Sprint) sess.push({ n: "Sprint", date: r.Sprint.date || r.date, time: r.Sprint.time, tbc: isRaceTbc || Boolean(r.Sprint.tbc), t: ts(r.Sprint.date, r.Sprint.time), dur: 60 * 60 * 1000 });
+    else if (r.ThirdPractice) sess.push({ n: "FP3", date: r.ThirdPractice.date || r.date, time: r.ThirdPractice.time, tbc: isRaceTbc || Boolean(r.ThirdPractice.tbc), t: ts(r.ThirdPractice.date, r.ThirdPractice.time), dur: 60 * 60 * 1000 });
+    if (r.Qualifying) sess.push({ n: "Qualifying", date: r.Qualifying.date || r.date, time: r.Qualifying.time, tbc: isRaceTbc || Boolean(r.Qualifying.tbc), t: ts(r.Qualifying.date, r.Qualifying.time), dur: 60 * 60 * 1000 });
+    sess.push({ n: "Race", date: r.date, time: r.time, tbc: isRaceTbc, t: ts(r.date, r.time), dur: 120 * 60 * 1000 });
 
     const sHtml = sess.map((s) => {
+      if (s.tbc) {
+        const dateFormatted = formatDateOnly(s.date);
+        return `<div class="srow">
+          <span class="sname">${s.n}</span>
+          <span class="stime">
+            <span class="abs-time">${dateFormatted}</span>
+            <span class="tbc-chip">Time TBC</span>
+          </span>
+        </div>`;
+      }
+
       const isSessPast = s.t + s.dur < now;
       const isSessLive = now >= s.t && now < s.t + s.dur;
 
@@ -640,6 +811,10 @@ function render() {
       </div>`;
     }).join("");
 
+    const tbcFootnote = isRaceTbc
+      ? `<div class="card-tbc-notice">Start times TBC · Dates confirmed by FIA</div>`
+      : "";
+
     const cardHTML = `<div class="card ${isNext ? "next" : ""} ${isLive ? "live" : ""}">
       <div class="card-head" onclick="toggleCard('${id}')">
         <div class="card-title">
@@ -654,7 +829,7 @@ function render() {
           <span class="chev ${collapsed[id] ? "" : "open"}" id="chev-${id}">▼</span>
         </div>
       </div>
-      <div class="sessions ${collapsed[id] ? "" : "open"}" id="sess-${id}">${sHtml}</div>
+      <div class="sessions ${collapsed[id] ? "" : "open"}" id="sess-${id}">${sHtml}${tbcFootnote}</div>
     </div>`;
 
     if (isNext) htmlNext += cardHTML;
@@ -704,8 +879,9 @@ function renderResults() {
     if (!r.Results || r.Results.length < 3) return;
     const [a, b, c] = r.Results;
     const n = (d) => d.Driver.code || d.Driver.familyName;
+    const flag = getRaceFlag(r.raceName);
     h += `<div class="res-item">
-      <div class="res-race">${getRaceFlag(r.raceName)} ${r.raceName}</div>
+      <div class="res-race">${flag ? flag + " " : ""}${r.raceName}</div>
       <div class="podium">
         <span class="pod pod1">🥇 ${n(a)}</span>
         <span class="pod pod2">🥈 ${n(b)}</span>
@@ -716,27 +892,106 @@ function renderResults() {
   // Hide skeleton when results are rendered
   const resultsSkeleton = document.getElementById("results-skeleton");
   if (resultsSkeleton) resultsSkeleton.style.display = "none";
-  document.getElementById("tc-res").innerHTML = h || '<div class="empty">No results yet.</div>';
+  const emptyResultsMsg = Number(currentSeasonYear) > ACTIVE_SEASON_YEAR
+    ? `${currentSeasonYear} season hasn't started yet.`
+    : "No results yet.";
+  document.getElementById("tc-res").innerHTML = h || `<div class="empty">${emptyResultsMsg}</div>`;
+}
+
+function getConstructorStandings(driverStandings) {
+  if (!driverStandings || !driverStandings.length) return [];
+  const teams = {};
+  driverStandings.forEach((d) => {
+    const constructor = d.Constructors?.[0] || {};
+    const teamName = constructor.name || "Unknown";
+    const teamId = constructor.constructorId || teamName.toLowerCase().replace(/[^a-z0-9]/g, "_");
+    const pts = parseFloat(d.points) || 0;
+    const driverCode = d.Driver?.code || d.Driver?.familyName || "";
+
+    if (!teams[teamName]) {
+      teams[teamName] = {
+        name: teamName,
+        constructorId: teamId,
+        points: 0,
+        drivers: []
+      };
+    }
+    teams[teamName].points += pts;
+    if (driverCode && !teams[teamName].drivers.includes(driverCode)) {
+      teams[teamName].drivers.push(driverCode);
+    }
+  });
+
+  return Object.values(teams)
+    .sort((a, b) => b.points - a.points)
+    .map((team, idx) => ({
+      position: String(idx + 1),
+      points: String(team.points),
+      Constructor: {
+        name: team.name,
+        constructorId: team.constructorId
+      },
+      drivers: team.drivers
+    }));
+}
+
+function setStandingsView(mode) {
+  if (mode !== "drivers" && mode !== "constructors") return;
+  standingsViewMode = mode;
+
+  const btnDrivers = document.getElementById("btn-std-drivers");
+  const btnTeams = document.getElementById("btn-std-teams");
+  if (btnDrivers) btnDrivers.classList.toggle("on", mode === "drivers");
+  if (btnTeams) btnTeams.classList.toggle("on", mode === "constructors");
+
+  renderStandings();
 }
 
 function renderStandings() {
+  const standingsSkeleton = document.getElementById("standings-skeleton");
   if (!standings.length) {
-    // Hide skeleton even if no standings
-    const standingsSkeleton = document.getElementById("standings-skeleton");
     if (standingsSkeleton) standingsSkeleton.style.display = "none";
-    document.getElementById("tc-std").innerHTML = '<div class="empty">No standings yet.</div>';
+    const emptyStandingsMsg = Number(currentSeasonYear) > ACTIVE_SEASON_YEAR
+      ? `${currentSeasonYear} season hasn't started yet.`
+      : "No standings yet.";
+    document.getElementById("tc-std").innerHTML = `<div class="empty">${emptyStandingsMsg}</div>`;
     return;
   }
-  // Hide skeleton when standings are rendered
-  const standingsSkeleton = document.getElementById("standings-skeleton");
   if (standingsSkeleton) standingsSkeleton.style.display = "none";
 
-  const top = standings.slice(0, 10);
-  const max = parseFloat(top[0].points) || 1;
-  document.getElementById("s-leader").textContent = top[0].Driver.code || top[0].Driver.familyName;
-  document.getElementById("s-leader-pts").textContent = top[0].points + " pts";
+  if (standingsViewMode === "constructors") {
+    const teams = getConstructorStandings(standings);
+    const maxPts = Math.max(...teams.map((t) => parseFloat(t.points) || 0), 1);
+    let h = "";
+    teams.forEach((t, index) => {
+      const displayPos = index + 1;
+      const pts = parseFloat(t.points) || 0;
+      const pct = ((pts / maxPts) * 100).toFixed(0);
+      const col = TEAM_COLORS[t.Constructor.constructorId] || TEAM_COLORS[t.Constructor.name] || "#e10600";
+      const driversLine = t.drivers.join(" · ");
+
+      h += `<div class="stand-row">
+        <span class="s-pos">${displayPos}</span>
+        <div class="s-info">
+          <div class="s-top">
+            <span class="s-name">${t.Constructor.name}</span>
+            <span class="s-pts">${t.points}</span>
+          </div>
+          <div class="s-bar">
+            <div class="s-fill" style="width:${pct}%;background:${col}"></div>
+          </div>
+          <div class="s-team">${driversLine}</div>
+        </div>
+      </div>`;
+    });
+    document.getElementById("tc-std").innerHTML = h;
+    return;
+  }
+
+  // Drivers mode (default)
+  const max = parseFloat(standings[0]?.points) || 1;
   let h = "";
-  top.forEach((d, index) => {
+  standings.forEach((d, index) => {
     const displayPos = index + 1;
     const pct = ((parseFloat(d.points) / max) * 100).toFixed(0);
     const constructor = d.Constructors?.[0] || {};
@@ -759,17 +1014,75 @@ function renderStandings() {
   document.getElementById("tc-std").innerHTML = h;
 }
 
+function initExtensionPromo() {
+  const ua = navigator.userAgent;
+  const isFirefox = /firefox|fxios/i.test(ua);
+  const isEdge = /edg/i.test(ua);
+  const isBrave = /brave/i.test(ua) || (navigator.brave && navigator.brave.isBrave);
+  const isChrome = /chrome|crios/i.test(ua) && !isEdge && !isBrave;
+
+  const btn = document.getElementById("ext-install-btn");
+  const btnText = document.getElementById("ext-install-text");
+  const secondaryLink = document.getElementById("ext-secondary-link");
+
+  if (!btn || !btnText) return;
+
+  if (isFirefox) {
+    btn.href = "https://addons.mozilla.org/firefox/addon/f1-dash/";
+    btnText.textContent = "Add to Firefox";
+    if (secondaryLink) {
+      secondaryLink.href = "https://github.com/sadabx/f1/releases";
+      secondaryLink.textContent = "Chrome & Brave release ↗";
+    }
+  } else if (isEdge) {
+    btn.href = "https://github.com/sadabx/f1/releases";
+    btnText.textContent = "Install on Edge";
+    if (secondaryLink) {
+      secondaryLink.href = "https://addons.mozilla.org/firefox/addon/f1-dash/";
+      secondaryLink.textContent = "Firefox Add-on ↗";
+    }
+  } else if (isBrave) {
+    btn.href = "https://github.com/sadabx/f1/releases";
+    btnText.textContent = "Install on Brave";
+    if (secondaryLink) {
+      secondaryLink.href = "https://addons.mozilla.org/firefox/addon/f1-dash/";
+      secondaryLink.textContent = "Firefox Add-on ↗";
+    }
+  } else if (isChrome) {
+    btn.href = "https://github.com/sadabx/f1/releases";
+    btnText.textContent = "Install on Chrome";
+    if (secondaryLink) {
+      secondaryLink.href = "https://addons.mozilla.org/firefox/addon/f1-dash/";
+      secondaryLink.textContent = "Firefox Add-on ↗";
+    }
+  } else {
+    btn.href = "https://addons.mozilla.org/firefox/addon/f1-dash/";
+    btnText.textContent = "Get Extension";
+    if (secondaryLink) {
+      secondaryLink.href = "https://github.com/sadabx/f1/releases";
+      secondaryLink.textContent = "Chromium release ↗";
+    }
+  }
+}
+
 // ============================================================
 // MAIN FETCH FUNCTION
 // ============================================================
 async function fetchAll() {
+  const targetSeason = Number(currentSeasonYear);
+  updateSeasonUI();
+
   try {
-    // Fetch both APIs in parallel
+    const isActiveSeason = targetSeason === ACTIVE_SEASON_YEAR;
+    // Fetch schedule (plus OpenF1/Results/Standings only for active season)
     const [openF1Sessions, customSchedule, customData] = await Promise.all([
-      fetchOpenF1Sessions(currentSeasonYear),
-      fetchCustomSchedule(),
-      fetchCustomData()
+      isActiveSeason ? fetchOpenF1Sessions(targetSeason) : Promise.resolve(null),
+      fetchCustomSchedule(targetSeason),
+      isActiveSeason ? fetchCustomData() : Promise.resolve({ completed: [], standings: [], qualis: [] })
     ]);
+
+    // Ignore stale response if user switched seasons mid-fetch
+    if (targetSeason !== Number(currentSeasonYear)) return;
 
     // Update global data from custom endpoints
     completed = customData.completed;
@@ -781,16 +1094,8 @@ async function fetchAll() {
     if (openF1Sessions && openF1Sessions.length > 0) {
       const meetings = buildCalendarFromSessions(openF1Sessions);
       races = mergeCalendars(meetings, customSchedule);
-
-      // Update season year from data
-      if (customSchedule.length > 0) {
-        const customYear = customSchedule[0].season;
-        if (customYear) currentSeasonYear = customYear;
-      }
     } else {
-      // Fallback to customSchedule only
       races = customSchedule;
-      console.log("⚠️ Using Custom API as fallback for race schedule");
     }
 
     // Sort races by date
@@ -801,14 +1106,13 @@ async function fetchAll() {
     });
 
     // Update UI
-    document.title = `F1 ${currentSeasonYear} Dashboard`;
-    document.getElementById("year-display").textContent = currentSeasonYear;
+    updateSeasonUI();
 
     render();
     renderResults();
     renderStandings();
 
-    console.log(`✅ Data loaded - ${races.length} races from ${openF1Sessions && openF1Sessions.length > 0 ? 'OpenF1 + Custom API' : 'Custom API fallback'}`);
+    console.log(`✅ Data loaded (${targetSeason}) - ${races.length} races`);
   } catch (e) {
     console.error("❌ fetchAll failed:", e);
     document.getElementById("next-race-content").innerHTML = '<div class="err">Failed to load data. Check your connection and try refreshing.</div>';
@@ -825,6 +1129,21 @@ window.addEventListener('resize', () => {
     render();
   }
 });
+
+// Close season dropdown on click outside or Escape
+document.addEventListener("click", (e) => {
+  const switcher = document.getElementById("season-switcher");
+  if (switcher && !switcher.contains(e.target)) {
+    closeSeasonMenu();
+  }
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeSeasonMenu();
+});
+
+// Extension promo init
+initExtensionPromo();
 
 // Initial fetch
 fetchAll();
