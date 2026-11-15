@@ -430,13 +430,17 @@ api.alarms.onAlarm.addListener(async (alarm) => {
     }
 
     // Trigger Notification
-    api.notifications.create(alarm.name, {
+    const notifOptions = {
       type: 'basic',
       iconUrl: api.runtime.getURL('assets/icon128.png'),
       title: `🏎️ ${sessionTitle} starts in ${leadMin} minutes!`,
-      message: `${raceTitle} • Green light is approaching. Lights out soon! Click to open live dashboard.`,
+      message: `${raceTitle} • Green light is approaching. Lights out soon! Click to open F1 Dash.`,
       priority: 2
-    });
+    };
+    if (api.notifications && api.notifications.onButtonClicked) {
+      notifOptions.buttons = [{ title: 'Stop' }];
+    }
+    api.notifications.create(alarm.name, notifOptions);
 
     // Play Audio Alarm
     if (settings.soundEnabled) {
@@ -445,10 +449,73 @@ api.alarms.onAlarm.addListener(async (alarm) => {
   }
 });
 
-// Click notification to open user's live dashboard
-api.notifications.onClicked.addListener(() => {
-  api.tabs.create({ url: 'https://f1.trionine.com' });
+// ============================================================
+// OPEN EXTENSION POPUP / INTERFACE
+// ============================================================
+async function openExtensionUI() {
+  const url = api.runtime.getURL('popup.html');
+
+  // 1. Try to open the extension popup directly (if supported by browser)
+  if (api.action && typeof api.action.openPopup === 'function') {
+    try {
+      await api.action.openPopup();
+      return;
+    } catch (_) {}
+  }
+  if (api.browserAction && typeof api.browserAction.openPopup === 'function') {
+    try {
+      await api.browserAction.openPopup();
+      return;
+    } catch (_) {}
+  }
+
+  // 2. If already open in a tab, switch to and focus that tab
+  try {
+    const tabs = await api.tabs.query({ url: `${url}*` });
+    if (tabs && tabs.length > 0) {
+      await api.tabs.update(tabs[0].id, { active: true });
+      if (tabs[0].windowId && api.windows && api.windows.update) {
+        await api.windows.update(tabs[0].windowId, { focused: true });
+      }
+      return;
+    }
+  } catch (_) {}
+
+  // 3. Otherwise open the extension popup in a new tab
+  try {
+    await api.tabs.create({ url });
+  } catch (err) {
+    console.warn('[F1 Alert] Failed to open extension UI:', err);
+  }
+}
+
+// Click notification button (Chrome / Edge / Chromium)
+if (api.notifications && api.notifications.onButtonClicked) {
+  api.notifications.onButtonClicked.addListener((notifId, btnIdx) => {
+    if (btnIdx === 0) {
+      stopF1Theme();
+      if (notifId) {
+        try { api.notifications.clear(notifId); } catch (_) {}
+      }
+    }
+  });
+}
+
+// Click notification body to stop alarm and open extension
+api.notifications.onClicked.addListener((notifId) => {
+  stopF1Theme();
+  if (notifId) {
+    try { api.notifications.clear(notifId); } catch (_) {}
+  }
+  openExtensionUI();
 });
+
+// Dismiss / swipe away notification automatically silences the alarm
+if (api.notifications && api.notifications.onClosed) {
+  api.notifications.onClosed.addListener(() => {
+    stopF1Theme();
+  });
+}
 
 // ============================================================
 // RUNTIME MESSAGE HANDLER (From Popup UI)
@@ -471,13 +538,17 @@ api.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     const volume = typeof msg.volume === 'number' ? msg.volume : 0.85;
     
     // Fire test notification
-    api.notifications.create('f1_test_notification', {
+    const testNotifOptions = {
       type: 'basic',
       iconUrl: api.runtime.getURL('assets/icon128.png'),
       title: '🏎️ F1 Live Alert: Alarm Test Active!',
-      message: 'Lights out in 5 minutes! Playing official F1 Theme.',
+      message: 'Lights out in 5 minutes! Playing official F1 Theme. Click to open F1 Dash.',
       priority: 2
-    });
+    };
+    if (api.notifications && api.notifications.onButtonClicked) {
+      testNotifOptions.buttons = [{ title: 'Stop' }];
+    }
+    api.notifications.create('f1_test_notification', testNotifOptions);
 
     // Play audio
     playF1Theme(volume);

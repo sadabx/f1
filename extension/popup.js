@@ -8,7 +8,11 @@ function setSafeContent(el, htmlString) {
 // ============================================================
 // F1 Dash - Multi-Tab Engine (Weekend, Standings, Results, Live)
 // ============================================================
-const api = typeof browser !== 'undefined' ? browser : chrome;
+const api = (typeof browser !== 'undefined') ? browser : (typeof chrome !== 'undefined' ? chrome : {
+  storage: { local: { get: async () => ({}), set: async () => {} } },
+  runtime: { getURL: (p) => p, sendMessage: async () => {} },
+  tabs: { create: ({ url }) => window.open(url, '_blank') }
+});
 
 // Complete Country & Circuit Flags Map
 const FLAGS = {
@@ -173,6 +177,12 @@ const ACTIVE_SEASON_YEAR = 2026;
 const SUPPORTED_SEASONS = [2026, 2027];
 let currentSeasonYear = ACTIVE_SEASON_YEAR;
 
+let currentSeries = 'f1'; // 'f1' | 'f2'
+let allF1Races = [];
+let allF2Races = [];
+let actualNextF1RaceIndex = 0;
+let actualNextF2RaceIndex = 0;
+
 let currentSettings = null;
 let allRaces = [];
 let actualNextRaceIndex = 0;
@@ -242,6 +252,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await loadScheduleData();
   await updateNotificationsBadge();
+
+  if (currentSettings?.f2SwitcherEnabled && currentSettings?.activeSeries === 'f2') {
+    await switchSeries('f2');
+  }
 });
 
 function initOnlineOfflineListeners() {
@@ -280,7 +294,9 @@ async function loadSettings() {
     sessions: { fp: true, sq: true, sprint: true, quali: true, race: true },
     pushEnabled: true,
     pushGrid: true,
-    pushLive: true
+    pushLive: true,
+    f2SwitcherEnabled: false,
+    activeSeries: 'f1'
   };
 
   try {
@@ -325,6 +341,12 @@ function applySettingsToUI() {
 
   const pushLiveCb = document.getElementById('cb-push-live');
   if (pushLiveCb) pushLiveCb.checked = currentSettings.pushLive !== false;
+
+  const f2Toggle = document.getElementById('toggle-f2-switcher');
+  if (f2Toggle) f2Toggle.checked = !!currentSettings.f2SwitcherEnabled;
+
+  const pillToggle = document.getElementById('series-pill-toggle');
+  if (pillToggle) pillToggle.style.display = currentSettings.f2SwitcherEnabled ? 'inline-flex' : 'none';
 }
 
 function saveSettings() {
@@ -332,6 +354,9 @@ function saveSettings() {
   currentSettings.masterEnabled = !!currentSettings.alarmEnabled;
   currentSettings.soundEnabled = !!currentSettings.alarmEnabled;
   currentSettings.leadMinutes = currentSettings.leadTime || 5;
+
+  const f2Toggle = document.getElementById('toggle-f2-switcher');
+  if (f2Toggle) currentSettings.f2SwitcherEnabled = f2Toggle.checked;
 
   api.storage.local.set({ f1_settings: currentSettings });
 
@@ -416,7 +441,9 @@ async function loadScheduleData() {
     const cacheData = cached[cacheKey]?.data || cached.f1_cached_schedule?.data;
     if (cacheData && Array.isArray(cacheData) && cacheData.length > 0) {
       allRaces = cacheData;
+      allF1Races = cacheData;
       findNextRaceIndex();
+      actualNextF1RaceIndex = actualNextRaceIndex;
       renderRoundIndex(actualNextRaceIndex);
       loadedFromCache = true;
     }
@@ -478,11 +505,13 @@ async function loadScheduleData() {
 
     if (combined.length > 0) {
       allRaces = combined;
+      allF1Races = combined;
       await api.storage.local.set({
         [cacheKey]: { timestamp: Date.now(), data: combined },
         f1_cached_schedule: { timestamp: Date.now(), data: combined }
       });
       findNextRaceIndex();
+      actualNextF1RaceIndex = actualNextRaceIndex;
       renderRoundIndex(actualNextRaceIndex);
       return;
     }
@@ -510,6 +539,182 @@ function findNextRaceIndex() {
   }
 
   actualNextRaceIndex = found !== -1 ? found : allRaces.length - 1;
+}
+
+function parseRawF2Data(rawData) {
+  const races = rawData?.races || rawData?.Races || [];
+  if (!Array.isArray(races)) return [];
+
+  if (races.length > 0 && races[0].Feature) {
+    return races;
+  }
+
+  function parseTime(iso) {
+    if (!iso) return null;
+    if (iso.includes('T')) {
+      const [d, t] = iso.split('T');
+      return { date: d, time: t };
+    }
+    return { date: iso, time: '00:00:00Z' };
+  }
+
+  return races.map((r, idx) => {
+    const sess = r.sessions || {};
+    const featIso = sess.feature || sess.race;
+    const featParsed = parseTime(featIso);
+    const raceName = r.name || 'Round';
+    const circuit = r.location || 'Official Circuit';
+
+    return {
+      round: String(r.round || (idx + 1)),
+      raceName,
+      circuit,
+      country: r.country || raceName,
+      locality: circuit,
+      flag: (typeof getFlag === 'function' ? getFlag(raceName) : null) || r.flag || '🏁',
+      date: featParsed ? featParsed.date : (r.date || '2026-01-01'),
+      time: featParsed ? featParsed.time : '10:00:00Z',
+      Practice: parseTime(sess.practice || sess.fp || sess.fp1),
+      Qualifying: parseTime(sess.qualifying || sess.quali),
+      Sprint: parseTime(sess.sprint),
+      Feature: featParsed
+    };
+  });
+}
+
+async function loadF2ScheduleData() {
+  if (allF2Races && allF2Races.length > 0) return allF2Races;
+
+  let loadedF2 = [];
+
+  // 1. Try local cache in extension storage first (0ms load)
+  try {
+    const cached = await api.storage.local.get('f2_cached_schedule');
+    const cachedEntry = cached?.f2_cached_schedule;
+    if (cachedEntry?.data && Array.isArray(cachedEntry.data) && cachedEntry.data.length > 0) {
+      loadedF2 = cachedEntry.data;
+    }
+  } catch (_) {}
+
+  // 2. Try bundled offline asset if cache is empty (0ms instant fallback)
+  if (!loadedF2 || loadedF2.length === 0) {
+    try {
+      const assetUrl = (typeof api !== 'undefined' && api?.runtime?.getURL)
+        ? api.runtime.getURL('assets/f2_2026.json')
+        : 'assets/f2_2026.json';
+      const res = await fetch(assetUrl);
+      if (res.ok) {
+        const data = await res.json();
+        loadedF2 = parseRawF2Data(data);
+      }
+    } catch (_) {}
+  }
+
+  // 3. Direct fetch from upstream source (sportstimes/f1)
+  // Fetches directly from the open community source without touching user's website/repo
+  const fetchDirectFromSource = async () => {
+    try {
+      const res = await fetch(`https://raw.githubusercontent.com/sportstimes/f1/main/_db/f2/2026.json?_t=${Date.now()}`);
+      if (res.ok) {
+        const raw = await res.json();
+        const parsed = parseRawF2Data(raw);
+        if (parsed && parsed.length > 0) {
+          const total = parsed.length || 14;
+          parsed.forEach(r => {
+            r.season = '2026';
+            r.seasonTotal = total;
+          });
+          allF2Races = parsed;
+          await api.storage.local.set({
+            f2_cached_schedule: { timestamp: Date.now(), data: parsed }
+          });
+          if (currentSeries === 'f2') {
+            allRaces = allF2Races;
+            findNextRaceIndex();
+            renderRoundIndex(actualNextRaceIndex);
+          }
+        }
+      }
+    } catch (_) {}
+  };
+
+  if (loadedF2 && loadedF2.length > 0) {
+    const total = loadedF2.length || 14;
+    loadedF2.forEach(r => {
+      r.season = '2026';
+      r.seasonTotal = total;
+    });
+    allF2Races = loadedF2;
+    // Asynchronously refresh in background from upstream source
+    fetchDirectFromSource();
+    return allF2Races;
+  }
+
+  await fetchDirectFromSource();
+  return allF2Races;
+}
+
+async function switchSeries(series) {
+  if (currentSeries === series) return;
+  currentSeries = series;
+
+  if (currentSettings) {
+    currentSettings.activeSeries = series;
+    api.storage.local.set({ f1_settings: currentSettings });
+  }
+
+  const btnF1 = document.getElementById('btn-series-f1');
+  const btnF2 = document.getElementById('btn-series-f2');
+  const logoF1 = document.getElementById('brand-logo-f1');
+  const logoF2 = document.getElementById('brand-logo-f2');
+  const sessionTitle = document.getElementById('sessions-section-title');
+
+  if (series === 'f2') {
+    if (btnF1) btnF1.classList.remove('active');
+    if (btnF2) btnF2.classList.add('active');
+    if (logoF1) logoF1.style.display = 'none';
+    if (logoF2) logoF2.style.display = 'block';
+
+    document.body.classList.add('f2-mode');
+
+    // Ensure on weekend tab
+    if (activeTab !== 'tab-weekend') {
+      switchTabFromCode('tab-weekend');
+    }
+
+    if (sessionTitle) {
+      sessionTitle.textContent = 'F2 WEEKEND SESSIONS';
+    }
+
+    allF1Races = allRaces;
+    actualNextF1RaceIndex = actualNextRaceIndex;
+
+    await loadF2ScheduleData();
+    allRaces = allF2Races;
+    findNextRaceIndex();
+    actualNextF2RaceIndex = actualNextRaceIndex;
+    renderRoundIndex(actualNextRaceIndex);
+
+  } else {
+    if (btnF2) btnF2.classList.remove('active');
+    if (btnF1) btnF1.classList.add('active');
+    if (logoF2) logoF2.style.display = 'none';
+    if (logoF1) logoF1.style.display = 'block';
+
+    document.body.classList.remove('f2-mode');
+
+    if (sessionTitle) {
+      sessionTitle.textContent = 'RACE WEEKEND SESSIONS';
+    }
+
+    if (allF1Races && allF1Races.length > 0) {
+      allRaces = allF1Races;
+      actualNextRaceIndex = actualNextF1RaceIndex;
+      renderRoundIndex(actualNextRaceIndex);
+    } else {
+      await loadScheduleData();
+    }
+  }
 }
 
 function extractRaceSessions(race) {
@@ -542,13 +747,22 @@ function extractRaceSessions(race) {
     }
   }
 
+  // F2 sessions
+  if (race.Practice) {
+    add('fp', 'FP', 'Practice', race.Practice);
+  }
+  // Standard F1 sessions
   add('fp', 'FP1', 'Practice 1', race.FirstPractice);
   add('sq', 'SQ', 'Sprint Qualifying', race.SprintQualifying);
   add('fp', 'FP2', 'Practice 2', race.SecondPractice);
   add('sprint', 'Sprint', 'Sprint Race', race.Sprint);
   add('fp', 'FP3', 'Practice 3', race.ThirdPractice);
   add('quali', 'Quali', 'Qualifying', race.Qualifying);
-  add('race', 'Race', 'Grand Prix', race.date, race.time, race.tbc);
+  if (race.Feature) {
+    add('race', 'Feature', 'Feature Race', race.Feature);
+  } else {
+    add('race', 'Race', 'Grand Prix', race.date, race.time, race.tbc);
+  }
 
   sessions.sort((a, b) => a.t - b.t);
   return sessions;
@@ -574,7 +788,7 @@ function renderRoundIndex(idx) {
   currentSeasonYear = Number(raceSeason);
   updateSeasonUI();
 
-  const total = race.seasonTotal || 24;
+  const total = race.seasonTotal || (currentSeries === 'f2' ? 14 : 24);
   const badge = document.getElementById('hero-round-badge');
   if (badge) badge.textContent = `ROUND ${race.round} OF ${total}`;
 
@@ -602,15 +816,24 @@ function renderRoundIndex(idx) {
 
   currentTargetSession = targetSess;
 
-  const cleanRaceName = `${race.raceName.replace(/grand prix/gi, '').trim()} Grand Prix`;
-  document.getElementById('hero-flag').textContent = getFlag(cleanRaceName);
-  document.getElementById('hero-race-name').textContent = cleanRaceName;
-  document.getElementById('hero-circuit').textContent = `Round ${race.round} • ${race.Circuit?.circuitName || ''}`;
+  const cleanRaceName = (currentSeries === 'f2')
+    ? `${race.raceName.replace(/grand prix/gi, '').trim()} F2 Round`
+    : `${race.raceName.replace(/grand prix/gi, '').trim()} Grand Prix`;
+  const flagEl = document.getElementById('hero-flag');
+  if (flagEl) flagEl.textContent = race.flag || getFlag(cleanRaceName);
+  const raceNameEl = document.getElementById('hero-race-name');
+  if (raceNameEl) raceNameEl.textContent = cleanRaceName;
+  const circuitEl = document.getElementById('hero-circuit');
+  if (circuitEl) {
+    const circuitDisplay = race.circuit || race.Circuit?.circuitName || '';
+    circuitEl.textContent = `Round ${race.round} • ${circuitDisplay}`;
+  }
 
   const heroTime = document.getElementById('hero-time-info');
   if (heroTime) {
     if (liveSess) {
-      setSafeContent(heroTime, `<span style="color: var(--f1red); font-weight: 800;">● ${liveSess.name} IS LIVE NOW</span>`);
+      const liveColor = currentSeries === 'f2' ? '#009CDE' : 'var(--f1red)';
+      setSafeContent(heroTime, `<span style="color: ${liveColor}; font-weight: 800;">● ${liveSess.name} IS LIVE NOW</span>`);
     } else if (targetSess.tbc) {
       const dateFormatted = formatConfirmedDate(targetSess.dateStr);
       heroTime.textContent = `${targetSess.name} • ${dateFormatted} (Times TBC)`;
@@ -651,7 +874,8 @@ function renderSessionList(sessions, activeTarget, liveSess) {
       mainTimeLine = `${dayStr} ${timeStr}`;
 
       if (isLive) {
-        subTimeLine = '<span style="color: var(--f1red); font-weight: 800;">● LIVE NOW</span>';
+        const liveColor = currentSeries === 'f2' ? '#009CDE' : 'var(--f1red)';
+        subTimeLine = `<span style="color: ${liveColor}; font-weight: 800;">● LIVE NOW</span>`;
       } else if (isPast) {
         subTimeLine = 'Finished';
       } else {
@@ -2795,6 +3019,37 @@ function setupUIEventListeners() {
         currentSettings.pushLive = pushLiveCb.checked;
         saveSettings();
       }
+    });
+  }
+
+  // Feeder & Support Series (F1 <-> F2)
+  const f2Toggle = document.getElementById('toggle-f2-switcher');
+  const pillToggle = document.getElementById('series-pill-toggle');
+  if (f2Toggle) {
+    f2Toggle.addEventListener('change', () => {
+      if (currentSettings) {
+        currentSettings.f2SwitcherEnabled = f2Toggle.checked;
+        saveSettings();
+      }
+      if (pillToggle) {
+        pillToggle.style.display = f2Toggle.checked ? 'inline-flex' : 'none';
+      }
+      if (!f2Toggle.checked && currentSeries === 'f2') {
+        switchSeries('f1');
+      }
+    });
+  }
+
+  const btnSeriesF1 = document.getElementById('btn-series-f1');
+  const btnSeriesF2 = document.getElementById('btn-series-f2');
+  if (btnSeriesF1) {
+    btnSeriesF1.addEventListener('click', () => {
+      switchSeries('f1');
+    });
+  }
+  if (btnSeriesF2) {
+    btnSeriesF2.addEventListener('click', () => {
+      switchSeries('f2');
     });
   }
 

@@ -21,8 +21,11 @@
     <header class="top-bar">
       <div class="brand">
         <a href="https://f1.trionine.com" target="_blank" rel="noopener noreferrer" class="brand-logo-link" title="Open F1 Dash (f1.trionine.com)">
-          <svg class="f1-official-logo" viewBox="0 0 120 30" aria-label="Formula 1 Logo">
+          <svg class="f1-official-logo" id="brand-logo-f1" viewBox="0 0 120 30" aria-label="Formula 1 Logo">
             <path d="M89.9999375,30 L119.999937,0 L101.943687,0 L71.9443125,30 L89.9999375,30 Z M85.6986875,13.065 L49.3818125,13.065 C38.3136875,13.065 36.3768125,13.651875 31.6361875,18.3925 C27.2024375,22.82625 20.0005625,30 20.0005625,30 L35.7324375,30 L39.4855625,26.246875 C41.9530625,23.779375 43.2255625,23.52375 48.4068125,23.52375 L75.2405625,23.52375 L85.6986875,13.065 Z M31.1518125,16.253125 C27.8774375,19.3425 20.7530625,26.263125 16.9130625,30 L-6.25e-05,30 C-6.25e-05,30 13.5524375,16.486875 21.0849375,9.0725 C28.8455625,1.685 32.7143125,0 46.9486875,0 L98.7643125,0 L87.5449375,11.21875 L48.0011875,11.21875 C37.9993125,11.21875 35.7518125,11.911875 31.1518125,16.253125 Z" fill="var(--f1red)"/>
+          </svg>
+          <svg class="f2-official-logo" id="brand-logo-f2" viewBox="29 0 471 157" aria-label="Formula 2 Logo" style="display: none;">
+            <path fill="#009CDE" d="m380.29 156.2c12.981-0.16226 23.042-3.9755 30.506-8.5839 11.213-6.9288 16.389-15.496 17.07-16.535l13.403-20.738h-124.59l5.7118-8.8435h94.585c24.778 0 37.873-12.365 43.195-20.608 3.3264-5.1601 35.098-54.359 35.098-54.359 3.6348-5.6469 7.4967-14.198 1.9472-21.03-1.6551-2.1744-5.1276-5.0952-12.316-5.0952h-136.13c-24.778 0-37.873 12.365-43.195 20.608-3.3265 5.1601-16.34 25.249-16.34 25.249h124.41l-5.7118 8.8435h-93.125c-12.981 0.16227-23.042 3.9755-30.506 8.5839-11.213 6.9288-16.389 15.496-17.07 16.535l-0.0487 0.08113c-0.95735 1.4442-48.923 75.876-48.923 75.876h162.04zm-108.2-109.92 29.597-45.856h-131.26c-41.183 0-61.84 33.622-61.84 33.622l-78.845 122.15h68.882l35.65-55.219h72.565c24.778 0 37.873-12.365 43.195-20.608 3.3265-5.1601 16.34-25.249 16.34-25.249h-102.5l5.7118-8.8435z"/>
           </svg>
         </a>
         <div class="brand-lockup">
@@ -32,6 +35,10 @@
       </div>
 
       <div class="top-controls">
+        <div class="series-pill-toggle" id="series-pill-toggle" style="display: none;" title="Toggle Formula 1 / Formula 2">
+          <button class="series-pill active" id="btn-series-f1" type="button">F1</button>
+          <button class="series-pill" id="btn-series-f2" type="button">F2</button>
+        </div>
         <span class="season-label" id="season-display">2026</span>
         <button class="icon-btn notif-bell-btn" id="btn-open-notifications" title="Race Alerts & Notifications" aria-label="Notifications">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -160,7 +167,7 @@
         <div class="sessions-section">
           <div class="section-bar">
             <span class="red-bar-icon"></span>
-            <span class="section-title">RACE WEEKEND SESSIONS</span>
+            <span class="section-title" id="sessions-section-title">RACE WEEKEND SESSIONS</span>
           </div>
 
           <div class="session-list" id="session-list">
@@ -497,6 +504,25 @@
             </svg>
             <span id="test-radio-text">Test Radio Alert</span>
           </button>
+        </div>
+      </div>
+
+      <!-- Feeder & Support Series -->
+      <div class="setting-section-header" style="margin-top: 20px;">
+        <span class="section-badge-dot" style="background: #009CDE; box-shadow: 0 0 6px rgba(0, 156, 222, 0.7);"></span>
+        <span class="setting-section-title">FEEDER & SUPPORT SERIES</span>
+      </div>
+
+      <div class="setting-card">
+        <div class="master-row">
+          <div>
+            <span class="setting-title">F1 ↔ F2 QUICK SWITCHER</span>
+            <span class="setting-hint">Show an F1 / F2 toggle in the top bar to easily switch between Formula 1 and Formula 2 schedules</span>
+          </div>
+          <label class="toggle-switch" title="Toggle F1 / F2 Quick Switcher">
+            <input type="checkbox" id="toggle-f2-switcher">
+            <span class="slider"></span>
+          </label>
         </div>
       </div>
 

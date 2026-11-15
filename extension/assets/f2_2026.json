@@ -1,0 +1,371 @@
+{
+  "series": "F2",
+  "season": "2026",
+  "totalRounds": 14,
+  "Races": [
+    {
+      "round": "1",
+      "raceName": "Australian",
+      "circuit": "Melbourne",
+      "country": "Australian",
+      "locality": "Melbourne",
+      "flag": "\ud83c\udde6\ud83c\uddfa",
+      "date": "2026-03-08",
+      "time": "00:25:00Z",
+      "Practice": {
+        "date": "2026-03-05",
+        "time": "23:00:00Z"
+      },
+      "Qualifying": {
+        "date": "2026-03-06",
+        "time": "03:55:00Z"
+      },
+      "Sprint": {
+        "date": "2026-03-07",
+        "time": "03:30:00Z"
+      },
+      "Feature": {
+        "date": "2026-03-08",
+        "time": "00:25:00Z"
+      }
+    },
+    {
+      "round": "2",
+      "raceName": "USA",
+      "circuit": "Miami",
+      "country": "USA",
+      "locality": "Miami",
+      "flag": "\ud83c\uddfa\ud83c\uddf8",
+      "date": "2026-05-03",
+      "time": "13:25:00Z",
+      "Practice": {
+        "date": "2026-05-01",
+        "time": "13:30:00Z"
+      },
+      "Qualifying": {
+        "date": "2026-05-01",
+        "time": "18:30:00Z"
+      },
+      "Sprint": {
+        "date": "2026-05-02",
+        "time": "14:00:00Z"
+      },
+      "Feature": {
+        "date": "2026-05-03",
+        "time": "13:25:00Z"
+      }
+    },
+    {
+      "round": "3",
+      "raceName": "Canada",
+      "circuit": "Montr\u00e9al",
+      "country": "Canada",
+      "locality": "Montr\u00e9al",
+      "flag": "\ud83c\udde8\ud83c\udde6",
+      "date": "2026-05-24",
+      "time": "16:05:00Z",
+      "Practice": {
+        "date": "2026-05-22",
+        "time": "14:05:00Z"
+      },
+      "Qualifying": {
+        "date": "2026-05-22",
+        "time": "18:20:00Z"
+      },
+      "Sprint": {
+        "date": "2026-05-23",
+        "time": "18:10:00Z"
+      },
+      "Feature": {
+        "date": "2026-05-24",
+        "time": "16:05:00Z"
+      }
+    },
+    {
+      "round": "4",
+      "raceName": "Monaco",
+      "circuit": "Monte Carlo",
+      "country": "Monaco",
+      "locality": "Monte Carlo",
+      "flag": "\ud83c\uddf2\ud83c\udde8",
+      "date": "2026-06-07",
+      "time": "07:25:00Z",
+      "Practice": {
+        "date": "2026-06-04",
+        "time": "13:00:00Z"
+      },
+      "Qualifying": {
+        "date": "2026-06-05",
+        "time": "13:10:00Z"
+      },
+      "Sprint": {
+        "date": "2026-06-06",
+        "time": "12:15:00Z"
+      },
+      "Feature": {
+        "date": "2026-06-07",
+        "time": "07:25:00Z"
+      }
+    },
+    {
+      "round": "5",
+      "raceName": "Spanish",
+      "circuit": "Barcelona",
+      "country": "Spanish",
+      "locality": "Barcelona",
+      "flag": "\ud83c\uddea\ud83c\uddf8",
+      "date": "2026-06-14",
+      "time": "09:25:00Z",
+      "Practice": {
+        "date": "2026-06-12",
+        "time": "09:05:00Z"
+      },
+      "Qualifying": {
+        "date": "2026-06-12",
+        "time": "13:55:00Z"
+      },
+      "Sprint": {
+        "date": "2026-06-13",
+        "time": "12:15:00Z"
+      },
+      "Feature": {
+        "date": "2026-06-14",
+        "time": "09:25:00Z"
+      }
+    },
+    {
+      "round": "6",
+      "raceName": "Austrian",
+      "circuit": "Spielberg",
+      "country": "Austrian",
+      "locality": "Spielberg",
+      "flag": "\ud83c\udde6\ud83c\uddf9",
+      "date": "2026-06-28",
+      "time": "08:10:00Z",
+      "Practice": {
+        "date": "2026-06-26",
+        "time": "09:05:00Z"
+      },
+      "Qualifying": {
+        "date": "2026-06-26",
+        "time": "13:55:00Z"
+      },
+      "Sprint": {
+        "date": "2026-06-27",
+        "time": "12:15:00Z"
+      },
+      "Feature": {
+        "date": "2026-06-28",
+        "time": "08:10:00Z"
+      }
+    },
+    {
+      "round": "7",
+      "raceName": "British",
+      "circuit": "Silverstone",
+      "country": "British",
+      "locality": "Silverstone",
+      "flag": "\ud83c\uddec\ud83c\udde7",
+      "date": "2026-07-05",
+      "time": "10:15:00Z",
+      "Practice": {
+        "date": "2026-07-03",
+        "time": "09:00:00Z"
+      },
+      "Qualifying": {
+        "date": "2026-07-03",
+        "time": "13:55:00Z"
+      },
+      "Sprint": {
+        "date": "2026-07-04",
+        "time": "12:45:00Z"
+      },
+      "Feature": {
+        "date": "2026-07-05",
+        "time": "10:15:00Z"
+      }
+    },
+    {
+      "round": "8",
+      "raceName": "Belgian",
+      "circuit": "Spa-Francorchamps",
+      "country": "Belgian",
+      "locality": "Spa-Francorchamps",
+      "flag": "\ud83c\udde7\ud83c\uddea",
+      "date": "2026-07-19",
+      "time": "08:00:00Z",
+      "Practice": {
+        "date": "2026-07-17",
+        "time": "09:05:00Z"
+      },
+      "Qualifying": {
+        "date": "2026-07-17",
+        "time": "13:55:00Z"
+      },
+      "Sprint": {
+        "date": "2026-07-18",
+        "time": "12:15:00Z"
+      },
+      "Feature": {
+        "date": "2026-07-19",
+        "time": "08:00:00Z"
+      }
+    },
+    {
+      "round": "9",
+      "raceName": "Hungarian",
+      "circuit": "Budapest",
+      "country": "Hungarian",
+      "locality": "Budapest",
+      "flag": "\ud83c\udded\ud83c\uddfa",
+      "date": "2026-07-26",
+      "time": "09:25:00Z",
+      "Practice": {
+        "date": "2026-07-24",
+        "time": "09:05:00Z"
+      },
+      "Qualifying": {
+        "date": "2026-07-24",
+        "time": "13:55:00Z"
+      },
+      "Sprint": {
+        "date": "2026-07-25",
+        "time": "12:15:00Z"
+      },
+      "Feature": {
+        "date": "2026-07-26",
+        "time": "09:25:00Z"
+      }
+    },
+    {
+      "round": "10",
+      "raceName": "Italian",
+      "circuit": "Monza",
+      "country": "Italian",
+      "locality": "Monza",
+      "flag": "\ud83c\uddee\ud83c\uddf9",
+      "date": "2026-09-06",
+      "time": "07:45:00Z",
+      "Practice": {
+        "date": "2026-09-04",
+        "time": "08:00:00Z"
+      },
+      "Qualifying": {
+        "date": "2026-09-04",
+        "time": "12:55:00Z"
+      },
+      "Sprint": {
+        "date": "2026-09-05",
+        "time": "12:15:00Z"
+      },
+      "Feature": {
+        "date": "2026-09-06",
+        "time": "07:45:00Z"
+      }
+    },
+    {
+      "round": "11",
+      "raceName": "Spanish",
+      "circuit": "Madrid",
+      "country": "Spanish",
+      "locality": "Madrid",
+      "flag": "\ud83c\uddea\ud83c\uddf8",
+      "date": "2026-09-13",
+      "time": "09:25:00Z",
+      "Practice": {
+        "date": "2026-09-11",
+        "time": "09:05:00Z"
+      },
+      "Qualifying": {
+        "date": "2026-09-11",
+        "time": "13:00:00Z"
+      },
+      "Sprint": {
+        "date": "2026-09-12",
+        "time": "12:15:00Z"
+      },
+      "Feature": {
+        "date": "2026-09-13",
+        "time": "09:25:00Z"
+      }
+    },
+    {
+      "round": "12",
+      "raceName": "Azerbaijan",
+      "circuit": "Baku",
+      "country": "Azerbaijan",
+      "locality": "Baku",
+      "flag": "\ud83c\udde6\ud83c\uddff",
+      "date": "2026-09-26",
+      "time": "07:00:00Z",
+      "Practice": {
+        "date": "2026-09-24",
+        "time": "06:00:00Z"
+      },
+      "Qualifying": {
+        "date": "2026-09-24",
+        "time": "10:00:00Z"
+      },
+      "Sprint": {
+        "date": "2026-09-25",
+        "time": "04:15:00Z"
+      },
+      "Feature": {
+        "date": "2026-09-26",
+        "time": "07:00:00Z"
+      }
+    },
+    {
+      "round": "13",
+      "raceName": "Qatar",
+      "circuit": "Doha",
+      "country": "Qatar",
+      "locality": "Doha",
+      "flag": "\ud83c\uddf6\ud83c\udde6",
+      "date": "2026-11-29",
+      "time": "09:00:00Z",
+      "Practice": {
+        "date": "2026-11-27",
+        "time": "09:00:00Z"
+      },
+      "Qualifying": {
+        "date": "2026-11-27",
+        "time": "13:00:00Z"
+      },
+      "Sprint": {
+        "date": "2026-11-28",
+        "time": "10:00:00Z"
+      },
+      "Feature": {
+        "date": "2026-11-29",
+        "time": "09:00:00Z"
+      }
+    },
+    {
+      "round": "14",
+      "raceName": "Abu Dhabi",
+      "circuit": "Yas Marina",
+      "country": "Abu Dhabi",
+      "locality": "Yas Marina",
+      "flag": "\ud83c\udde6\ud83c\uddea",
+      "date": "2026-12-06",
+      "time": "06:40:00Z",
+      "Practice": {
+        "date": "2026-12-04",
+        "time": "07:55:00Z"
+      },
+      "Qualifying": {
+        "date": "2026-12-04",
+        "time": "11:55:00Z"
+      },
+      "Sprint": {
+        "date": "2026-12-05",
+        "time": "06:35:00Z"
+      },
+      "Feature": {
+        "date": "2026-12-06",
+        "time": "06:40:00Z"
+      }
+    }
+  ]
+}

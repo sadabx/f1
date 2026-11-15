@@ -87,6 +87,10 @@
 
 html {
   background-color: var(--bg);
+  min-height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 body {
@@ -95,7 +99,7 @@ body {
   height: 600px;
   min-height: 600px;
   max-height: 600px;
-  margin: 0;
+  margin: 0 auto;
   position: relative;
   background-color: var(--bg);
   color: var(--text);
@@ -107,6 +111,7 @@ body {
   display: flex;
   flex-direction: column;
   -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
 }
 
 /* Custom Scrollbar */
@@ -3373,3 +3378,104 @@ select,
   line-height: 1.45;
   max-width: 280px;
 }
+
+/* ============================================================
+   FORMULA 2 (F2) MODE & SWITCHER
+   ============================================================ */
+.f2-official-logo {
+  height: 14px;
+  width: auto;
+  display: block;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 6px rgba(0, 156, 222, 0.45));
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.f2-official-logo:hover,
+.brand-logo-link:hover .f2-official-logo {
+  transform: scale(1.05);
+  filter: drop-shadow(0 0 10px rgba(0, 156, 222, 0.7));
+}
+
+.series-pill-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1px 2px;
+  gap: 1px;
+}
+
+.series-pill {
+  border: none;
+  background: transparent;
+  color: var(--text-sub);
+  font-family: 'Titillium Web', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  cursor: pointer;
+  line-height: 1.2;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.series-pill:hover {
+  color: #fff;
+}
+
+.series-pill.active#btn-series-f1 {
+  background: var(--f1red);
+  color: #fff;
+}
+
+.series-pill.active#btn-series-f2 {
+  background: #009CDE;
+  color: #fff;
+  box-shadow: 0 0 8px rgba(0, 156, 222, 0.45);
+}
+
+body.f2-mode .bottom-nav-bar {
+  display: none !important;
+}
+
+body.f2-mode .tab-viewport {
+  padding-bottom: 14px !important;
+}
+
+body.f2-mode .hero-card-accent {
+  background: #009CDE !important;
+}
+
+body.f2-mode .session-active-indicator {
+  background: #009CDE !important;
+}
+
+body.f2-mode .next-session-pill {
+  color: #009CDE !important;
+  background: rgba(0, 156, 222, 0.15) !important;
+  border-color: rgba(0, 156, 222, 0.35) !important;
+}
+
+body.f2-mode .countdown-progress-fill {
+  background: #009CDE !important;
+  box-shadow: 0 0 8px rgba(0, 156, 222, 0.72) !important;
+}
+
+body.f2-mode .red-bar-icon {
+  background: #009CDE !important;
+  box-shadow: 0 0 8px rgba(0, 156, 222, 0.6) !important;
+}
+
+body.f2-mode .session-row.current-target {
+  background: linear-gradient(90deg, rgba(0, 156, 222, 0.15), rgba(0, 156, 222, 0.02)) !important;
+}
+
+body.f2-mode .session-row.current-target .sess-timeline-dot {
+  background: #009CDE !important;
+  box-shadow: 0 0 6px #009CDE !important;
+  border-color: #009CDE !important;
+}
+
