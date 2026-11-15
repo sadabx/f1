@@ -1320,11 +1320,308 @@ body {
 }
 
 .settings-body {
-  padding: 12px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 9px;
   overflow-y: auto;
+}
+
+/* ============================================================
+   STREAMLINED ZERO-SCROLL SETTINGS CARDS
+   ============================================================ */
+.cfg-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 11px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  transition: border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.cfg-card.alarm-master {
+  background: linear-gradient(135deg, rgba(225, 6, 0, 0.08) 0%, rgba(19, 19, 28, 0.95) 45%);
+  border-left: 3px solid var(--f1red);
+}
+
+.cfg-card.push-master {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(19, 19, 28, 0.95) 45%);
+  border-left: 3px solid rgba(255, 255, 255, 0.25);
+}
+
+.cfg-card.f2-master {
+  background: linear-gradient(135deg, rgba(0, 156, 222, 0.1) 0%, rgba(19, 19, 28, 0.95) 48%);
+  border-left: 3px solid #009CDE;
+}
+
+.cfg-card.f2-master input:checked + .slider {
+  background-color: #009CDE;
+  border-color: #009CDE;
+  box-shadow: 0 0 10px rgba(0, 156, 222, 0.5);
+}
+
+.cfg-row-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.cfg-text-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.cfg-main-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.7px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cfg-subtext {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+.cfg-subbox {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: opacity 0.2s ease, filter 0.2s ease;
+}
+
+.cfg-subbox.dimmed {
+  opacity: 0.3;
+  filter: grayscale(0.8);
+  pointer-events: none;
+}
+
+.cfg-inline-split {
+  display: grid;
+  grid-template-columns: 115px 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.cfg-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  height: 28px;
+  padding: 0 4px;
+  user-select: none;
+}
+
+.stepper-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 700;
+  width: 20px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.12s ease;
+}
+
+.stepper-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.stepper-val {
+  font-family: var(--font-f1);
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  flex: 1;
+  cursor: pointer;
+}
+
+.cfg-vol-test-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cfg-vol-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cfg-vol-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.3px;
+}
+
+.cfg-vol-meta span#volume-val {
+  color: #fff;
+  font-family: var(--font-mono);
+  min-width: 26px;
+  text-align: right;
+}
+
+.f1-range-refined {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(to right, var(--f1red) 0%, var(--f1red) var(--range-progress, 65%), rgba(255, 255, 255, 0.15) var(--range-progress, 65%), rgba(255, 255, 255, 0.15) 100%);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+  border: none;
+}
+
+.f1-range-refined::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid var(--f1red);
+  cursor: pointer;
+  box-shadow: 0 0 6px rgba(225, 6, 0, 0.6);
+  transition: transform 0.12s ease;
+}
+
+.f1-range-refined::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.btn-ghost-action {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-family: var(--font-f1);
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #e5e7eb;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-ghost-action:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+
+.btn-ghost-action.active-stop {
+  background: rgba(225, 6, 0, 0.18);
+  border-color: var(--f1red);
+  color: #fff;
+  box-shadow: 0 0 8px rgba(225, 6, 0, 0.4);
+}
+
+.btn-icon-action {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  justify-content: center;
+}
+
+.cfg-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+}
+
+.cfg-chip-pill {
+  position: relative;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+.cfg-chip-pill input {
+  display: none;
+}
+
+.cfg-chip-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #6b7280;
+  transition: all 0.12s ease;
+  letter-spacing: 0.2px;
+}
+
+.cfg-chip-text .chip-check {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+  transition: width 0.12s ease, opacity 0.12s ease;
+  font-size: 9px;
+}
+
+/* Signature F1 Red Active Chip State */
+.cfg-chip-pill input:checked + .cfg-chip-text {
+  background: rgba(225, 6, 0, 0.16);
+  border-color: var(--f1red);
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 0 8px rgba(225, 6, 0, 0.25);
+}
+
+.cfg-chip-pill input:checked + .cfg-chip-text .chip-check {
+  opacity: 1;
+  width: 9px;
+  margin-right: 2px;
+}
+
+.cfg-section-label {
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+}
+
+.cfg-footer-note {
+  text-align: center;
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 2px;
 }
 
 .setting-card {
@@ -2463,9 +2760,14 @@ body {
   letter-spacing: 1.1px;
 }
 
+/* Streamlined settings container */
 .settings-body {
-  gap: 12px;
-  padding: 14px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .setting-card {
@@ -2826,11 +3128,13 @@ body {
 /* ============================================================
    NOTIFICATIONS POPOVER & SETTINGS EXTENSIONS
    ============================================================ */
-.notif-bell-btn {
+.notif-bell-btn,
+.settings-gear-btn {
   position: relative;
 }
 
-.notification-badge-dot {
+.notification-badge-dot,
+.settings-badge-dot {
   position: absolute;
   top: 4px;
   right: 4px;
@@ -2841,6 +3145,19 @@ body {
   box-shadow: 0 0 8px rgba(225, 6, 0, 0.9);
   border: 1.5px solid #141419;
   animation: notifPulse 2s infinite ease-in-out;
+}
+
+.cfg-new-pill {
+  font-size: 8px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(0, 156, 222, 0.18);
+  color: #009CDE;
+  border: 1px solid rgba(0, 156, 222, 0.4);
+  letter-spacing: 0.5px;
+  margin-left: 5px;
+  vertical-align: middle;
 }
 
 @keyframes notifPulse {

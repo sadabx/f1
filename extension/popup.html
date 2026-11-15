@@ -47,11 +47,12 @@
           </svg>
           <span class="notification-badge-dot" id="notification-badge-dot" style="display: none;"></span>
         </button>
-        <button class="icon-btn" id="btn-open-settings" title="Settings & Preferences">
+        <button class="icon-btn settings-gear-btn" id="btn-open-settings" title="Settings & Preferences" aria-label="Settings">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
           </svg>
+          <span class="settings-badge-dot" id="settings-badge-dot" style="display: none;"></span>
         </button>
       </div>
     </header>
@@ -342,212 +343,208 @@
         <span>Back</span>
       </button>
 
-      <span class="settings-title">SETTINGS & ALARMS</span>
+      <span class="settings-title">SETTINGS & PREFERENCES</span>
       <div style="width: 50px;"></div>
     </header>
 
     <main class="settings-body">
-      <!-- System 1: Race Reminder Alarm (Pre-session music alert) -->
-      <div class="setting-section-header">
-        <span class="section-badge-dot red"></span>
-        <span class="setting-section-title">PRE-SESSION REMINDER ALARM</span>
-      </div>
-      <div class="setting-card master-card">
-        <div class="master-row">
-          <div>
-            <span class="setting-title">AUDIO REMINDER ALARM</span>
-            <span class="setting-hint">Play official F1 Theme music before green light</span>
+      <!-- ==========================================
+           CARD 1: PRE-SESSION RACE ALARMS (Audio Theme)
+           ========================================== -->
+      <div class="cfg-card alarm-master">
+        <!-- Master Switch Row -->
+        <div class="cfg-row-header">
+          <div class="cfg-text-group">
+            <span class="cfg-main-title">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--f1red);">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              PRE-SESSION ALARM
+            </span>
+            <span class="cfg-subtext">Play official F1 Theme music before green light</span>
           </div>
-          <label class="toggle-switch" title="Toggle Pre-Session Alarm (Active / Off)">
+          <label class="toggle-switch" title="Toggle Pre-Session Alarm">
             <input type="checkbox" id="master-switch" checked>
             <span class="slider"></span>
           </label>
         </div>
-      </div>
 
-      <!-- Setting: Lead Time -->
-      <div class="setting-card">
-        <div class="setting-header">
-          <span class="setting-title">PRE-SESSION ALERT TIME</span>
-          <span class="setting-hint">Plays F1 Intro Theme before green light</span>
-        </div>
-        <select id="lead-time-select" class="f1-select">
-          <option value="5" selected>5 minutes before green light</option>
-          <option value="10">10 minutes before green light</option>
-          <option value="15">15 minutes before green light</option>
-          <option value="30">30 minutes before green light</option>
-        </select>
-      </div>
+        <!-- Controls Subbox -->
+        <div class="cfg-subbox" id="alarm-controls-box">
+          
+          <!-- Timing Stepper + Volume & Ghost Test Button -->
+          <div class="cfg-inline-split">
+            <!-- Custom Stepper (No native OS select popup) -->
+            <div>
+              <div class="cfg-stepper" title="Click arrows or text to change alert lead time">
+                <button type="button" class="stepper-btn" id="btn-lead-prev" aria-label="Earlier">‹</button>
+                <span class="stepper-val" id="lead-display">10m before</span>
+                <button type="button" class="stepper-btn" id="btn-lead-next" aria-label="Later">›</button>
+              </div>
+              <!-- Hidden native select for 100% backward JS compatibility -->
+              <select id="lead-time-select" style="display: none;">
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+                <option value="15">15</option>
+                <option value="30">30</option>
+              </select>
+            </div>
 
-      <!-- Setting: Session Checkboxes -->
-      <div class="setting-card">
-        <div class="setting-header">
-          <span class="setting-title">SESSION NOTIFICATIONS</span>
-          <span class="setting-hint">Choose which session types trigger alarms</span>
-        </div>
-        <div class="sessions-toggle-grid">
-          <label class="custom-cb">
-            <input type="checkbox" id="cb-race" checked>
-            <span class="cb-checkmark"></span>
-            <span class="cb-label-text">Grand Prix Race</span>
-          </label>
-          <label class="custom-cb">
-            <input type="checkbox" id="cb-quali" checked>
-            <span class="cb-checkmark"></span>
-            <span class="cb-label-text">Qualifying</span>
-          </label>
-          <label class="custom-cb">
-            <input type="checkbox" id="cb-sq" checked>
-            <span class="cb-checkmark"></span>
-            <span class="cb-label-text">Sprint Shootout (SQ)</span>
-          </label>
-          <label class="custom-cb">
-            <input type="checkbox" id="cb-sprint" checked>
-            <span class="cb-checkmark"></span>
-            <span class="cb-label-text">Sprint Race</span>
-          </label>
-          <label class="custom-cb">
-            <input type="checkbox" id="cb-fp" checked>
-            <span class="cb-checkmark"></span>
-            <span class="cb-label-text">Practice (FP1, FP2, FP3)</span>
-          </label>
-        </div>
-      </div>
+            <!-- Refined Volume & Speaker Test Button -->
+            <div class="cfg-vol-test-wrap">
+              <div class="cfg-vol-box">
+                <div class="cfg-vol-meta">
+                  <span>VOLUME</span>
+                  <span id="volume-val">65%</span>
+                </div>
+                <input type="range" id="volume-slider" min="0" max="100" value="65" class="f1-range-refined">
+              </div>
 
-      <!-- Setting: Audio Volume -->
-      <div class="setting-card">
-        <div class="volume-header">
-          <div>
-            <span class="setting-title">ALARM SOUND VOLUME</span>
-            <span class="setting-hint">Set playback loudness</span>
+              <button id="btn-test-alarm" class="btn-ghost-action btn-icon-action" title="Preview race alarm sound" aria-label="Test alarm">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                </svg>
+                <span id="test-btn-text" style="display: none;">Test</span>
+              </button>
+              <button id="btn-stop-alarm" class="btn-ghost-action btn-icon-action active-stop" style="display: none;" title="Stop playing sound" aria-label="Stop sound">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="5" y="5" width="14" height="14" rx="2"></rect>
+                </svg>
+              </button>
+            </div>
           </div>
-          <span class="volume-badge" id="volume-val">85%</span>
-        </div>
-        <input type="range" id="volume-slider" min="0" max="100" value="85" class="f1-range">
-      </div>
 
-      <!-- Setting: Test Buttons -->
-      <div class="setting-card">
-        <div class="setting-header">
-          <span class="setting-title">TEST ALARM & NOTIFICATION</span>
-          <span class="setting-hint">Preview the race alarm sound and desktop notification</span>
-        </div>
-        <div class="test-alarm-row">
-          <button id="btn-test-alarm" class="f1-btn f1-btn-primary">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
-            </svg>
-            <span id="test-btn-text">Test Alarm</span>
-          </button>
-          <button id="btn-stop-alarm" class="f1-btn f1-btn-secondary" style="display: none;">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="5" y="5" width="14" height="14" rx="2"></rect>
-            </svg>
-            <span>Stop Sound</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- System 2: Standard Desktop Push Notifications -->
-      <div class="setting-section-header" style="margin-top: 20px;">
-        <span class="section-badge-dot purple"></span>
-        <span class="setting-section-title">STANDARD PUSH NOTIFICATIONS</span>
-      </div>
-
-      <div class="setting-card master-card">
-        <div class="master-row">
-          <div>
-            <span class="setting-title">DESKTOP PUSH ALERTS</span>
-            <span class="setting-hint">Receive browser alerts and bell updates</span>
+          <!-- Pre-session Alarm Filter Chips (High Contrast ON vs OFF) -->
+          <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 1px;">
+            <span class="cfg-section-label">ALARM SESSIONS:</span>
+            <div class="cfg-chips-row">
+              <label class="cfg-chip-pill">
+                <input type="checkbox" id="cb-race" checked>
+                <span class="cfg-chip-text"><span class="chip-check">✓</span>Grand Prix</span>
+              </label>
+              <label class="cfg-chip-pill">
+                <input type="checkbox" id="cb-quali" checked>
+                <span class="cfg-chip-text"><span class="chip-check">✓</span>Qualifying</span>
+              </label>
+              <label class="cfg-chip-pill">
+                <input type="checkbox" id="cb-sprint" checked>
+                <span class="cfg-chip-text"><span class="chip-check">✓</span>Sprint</span>
+              </label>
+              <label class="cfg-chip-pill">
+                <input type="checkbox" id="cb-sq" checked>
+                <span class="cfg-chip-text"><span class="chip-check">✓</span>Shootout</span>
+              </label>
+              <label class="cfg-chip-pill">
+                <input type="checkbox" id="cb-fp" checked>
+                <span class="cfg-chip-text"><span class="chip-check">✓</span>Practice</span>
+              </label>
+            </div>
           </div>
-          <label class="toggle-switch" title="Toggle Push Notifications (Active / Off)">
+
+        </div>
+      </div>
+
+      <!-- ==========================================
+           CARD 2: DESKTOP PUSH NOTIFICATIONS
+           ========================================== -->
+      <div class="cfg-card push-master">
+        <!-- Master Switch Row -->
+        <div class="cfg-row-header">
+          <div class="cfg-text-group">
+            <span class="cfg-main-title">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #cbd5e1;">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              DESKTOP NOTIFICATIONS
+            </span>
+            <span class="cfg-subtext">Browser alerts & team radio chime</span>
+          </div>
+          <label class="toggle-switch" title="Toggle Desktop Notifications">
             <input type="checkbox" id="push-switch" checked>
             <span class="slider"></span>
           </label>
         </div>
-      </div>
 
-      <div class="setting-card">
-        <div class="setting-header">
-          <span class="setting-title">PUSH EVENT ALERTS</span>
-          <span class="setting-hint">Select race events for desktop notifications</span>
-        </div>
-        <div class="sessions-toggle-grid">
-          <label class="custom-cb">
-            <input type="checkbox" id="cb-push-grid" checked>
-            <span class="cb-checkmark"></span>
-            <span class="cb-label-text">Starting Grid & Pole</span>
-          </label>
-          <label class="custom-cb">
-            <input type="checkbox" id="cb-push-live" checked>
-            <span class="cb-checkmark"></span>
-            <span class="cb-label-text">Session Underway</span>
-          </label>
-        </div>
-      </div>
+        <!-- Controls Subbox -->
+        <div class="cfg-subbox" id="push-controls-box">
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <span class="cfg-section-label">NOTIFY EVENTS:</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px;">
+              <div class="cfg-chips-row">
+                <label class="cfg-chip-pill">
+                  <input type="checkbox" id="cb-push-grid" checked>
+                  <span class="cfg-chip-text"><span class="chip-check">✓</span>Starting Grid</span>
+                </label>
+                <label class="cfg-chip-pill">
+                  <input type="checkbox" id="cb-push-live" checked>
+                  <span class="cfg-chip-text"><span class="chip-check">✓</span>Session Underway</span>
+                </label>
+              </div>
 
-      <div class="setting-card">
-        <div class="setting-header">
-          <span class="setting-title">TEAM RADIO ALERT SOUND</span>
-          <span class="setting-hint">Preview the official F1 team radio notification</span>
-        </div>
-        <div class="test-alarm-row">
-          <button id="btn-test-radio" class="f1-btn f1-btn-primary" style="background: #272733; border: 1px solid rgba(255,255,255,0.15);">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"></path>
-              <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"></path>
-              <circle cx="12" cy="12" r="2"></circle>
-              <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"></path>
-              <path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"></path>
-            </svg>
-            <span id="test-radio-text">Test Radio Alert</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Feeder & Support Series -->
-      <div class="setting-section-header" style="margin-top: 20px;">
-        <span class="section-badge-dot" style="background: #009CDE; box-shadow: 0 0 6px rgba(0, 156, 222, 0.7);"></span>
-        <span class="setting-section-title">FEEDER & SUPPORT SERIES</span>
-      </div>
-
-      <div class="setting-card">
-        <div class="master-row">
-          <div>
-            <span class="setting-title">F1 ↔ F2 QUICK SWITCHER</span>
-            <span class="setting-hint">Show an F1 / F2 toggle in the top bar to easily switch between Formula 1 and Formula 2 schedules</span>
+              <!-- Speaker Test Radio Button -->
+              <button id="btn-test-radio" class="btn-ghost-action btn-icon-action" title="Preview team radio alert chime" aria-label="Test radio alert">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                </svg>
+                <span id="test-radio-text" style="display: none;">Test Radio</span>
+              </button>
+            </div>
           </div>
-          <label class="toggle-switch" title="Toggle F1 / F2 Quick Switcher">
+        </div>
+      </div>
+
+      <!-- ==========================================
+           CARD 3: FORMULA 2 CHAMPIONSHIP
+           ========================================== -->
+      <div class="cfg-card f2-master">
+        <div class="cfg-row-header">
+          <div class="cfg-text-group">
+            <span class="cfg-main-title">
+              <svg width="18" height="10" viewBox="29 0 471 157" style="vertical-align: middle;">
+                <path fill="#009CDE" d="m380.29 156.2c12.981-0.16226 23.042-3.9755 30.506-8.5839 11.213-6.9288 16.389-15.496 17.07-16.535l13.403-20.738h-124.59l5.7118-8.8435h94.585c24.778 0 37.873-12.365 43.195-20.608 3.3264-5.1601 35.098-54.359 35.098-54.359 3.6348-5.6469 7.4967-14.198 1.9472-21.03-1.6551-2.1744-5.1276-5.0952-12.316-5.0952h-136.13c-24.778 0-37.873 12.365-43.195 20.608-3.3265 5.1601-16.34 25.249-16.34 25.249h124.41l-5.7118 8.8435h-93.125c-12.981 0.16227-23.042 3.9755-30.506 8.5839-11.213 6.9288-16.389 15.496-17.07 16.535l-0.0487 0.08113c-0.95735 1.4442-48.923 75.876-48.923 75.876h162.04zm-108.2-109.92 29.597-45.856h-131.26c-41.183 0-61.84 33.622-61.84 33.622l-78.845 122.15h68.882l35.65-55.219h72.565c24.778 0 37.873-12.365 43.195-20.608 3.3265-5.1601 16.34-25.249 16.34-25.249h-102.5l5.7118-8.8435z"/>
+              </svg>
+              FORMULA 2 CHAMPIONSHIP
+              <span class="cfg-new-pill" id="f2-new-pill" style="display: none;">NEW</span>
+            </span>
+            <span class="cfg-subtext">Show F1 / F2 schedule switcher in the top bar</span>
+          </div>
+          <label class="toggle-switch" title="Toggle F1 / F2 Switcher">
             <input type="checkbox" id="toggle-f2-switcher">
             <span class="slider"></span>
           </label>
         </div>
       </div>
 
-      <!-- System 3: Storage & Cache Management -->
-      <div class="setting-section-header" style="margin-top: 20px;">
-        <span class="section-badge-dot" style="background: #27F4D2;"></span>
-        <span class="setting-section-title">STORAGE & DATA CACHE</span>
-      </div>
+      <!-- ==========================================
+           CARD 4: EXTENSION CACHE
+           ========================================== -->
+      <div class="cfg-card">
+        <div class="cfg-row-header">
+          <div class="cfg-text-group">
+            <span class="cfg-main-title">
+              EXTENSION CACHE
+            </span>
+            <span class="cfg-subtext">Clear local schedule & standings cache</span>
+          </div>
 
-      <div class="setting-card">
-        <div class="setting-header">
-          <span class="setting-title">CLEAR EXTENSION CACHE</span>
-          <span class="setting-hint">Wipe stored schedule, standings & qualifying cache and re-sync fresh from API</span>
-        </div>
-        <div class="test-alarm-row">
-          <button id="btn-clear-cache" class="f1-btn" style="background: rgba(225, 6, 0, 0.12); border: 1px solid rgba(225, 6, 0, 0.4); color: #fff;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="1 4 1 10 7 10"></polyline>
-              <polyline points="23 20 23 14 17 14"></polyline>
+          <!-- Minimal Ghost Reset Button -->
+          <button id="btn-clear-cache" class="btn-ghost-action" title="Clear cache & sync data">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <polyline points="1 20 1 14 7 14"></polyline>
               <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
             </svg>
-            <span id="btn-clear-cache-text">Clear Cache & Refresh</span>
+            <span id="btn-clear-cache-text">Clear Cache</span>
           </button>
         </div>
       </div>
+
+      <div class="cfg-footer-note">F1 DASH • All settings save automatically</div>
     </main>
   </div>
 

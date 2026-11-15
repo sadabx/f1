@@ -252,6 +252,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await loadScheduleData();
   await updateNotificationsBadge();
+  await checkSettingsBadgeDot();
 
   if (currentSettings?.f2SwitcherEnabled && currentSettings?.activeSeries === 'f2') {
     await switchSeries('f2');
@@ -316,12 +317,15 @@ function applySettingsToUI() {
   if (masterToggle) masterToggle.checked = !!currentSettings.alarmEnabled;
 
   const leadSelect = document.getElementById('lead-time-select');
-  if (leadSelect) leadSelect.value = String(currentSettings.leadTime || 10);
+  const leadDisplay = document.getElementById('lead-display');
+  const leadVal = currentSettings.leadTime || 10;
+  if (leadSelect) leadSelect.value = String(leadVal);
+  if (leadDisplay) leadDisplay.textContent = `${leadVal}m before`;
 
   const volSlider = document.getElementById('volume-slider');
   const volVal = document.getElementById('volume-val');
   if (volSlider && volVal) {
-    const v = currentSettings.volume !== undefined ? currentSettings.volume : 85;
+    const v = currentSettings.volume !== undefined ? currentSettings.volume : 65;
     volSlider.value = v;
     volVal.textContent = `${v}%`;
     volSlider.style.setProperty('--range-progress', `${v}%`);
@@ -347,6 +351,16 @@ function applySettingsToUI() {
 
   const pillToggle = document.getElementById('series-pill-toggle');
   if (pillToggle) pillToggle.style.display = currentSettings.f2SwitcherEnabled ? 'inline-flex' : 'none';
+
+  // State Dimming for child controls
+  const alarmBox = document.getElementById('alarm-controls-box');
+  if (alarmBox && masterToggle) {
+    alarmBox.classList.toggle('dimmed', !masterToggle.checked);
+  }
+  const pushBox = document.getElementById('push-controls-box');
+  if (pushBox && pushToggle) {
+    pushBox.classList.toggle('dimmed', !pushToggle.checked);
+  }
 }
 
 function saveSettings() {
@@ -363,6 +377,59 @@ function saveSettings() {
   if (typeof api !== "undefined" && api?.runtime?.sendMessage) {
     api.runtime.sendMessage({ action: "UPDATE_SETTINGS", settings: currentSettings }).catch(() => {});
   }
+}
+
+// ============================================================
+// SETTINGS UPDATE BADGE & "WHAT'S NEW" TRACKING
+// ============================================================
+const CURRENT_SETTINGS_VERSION = (typeof api !== 'undefined' && api?.runtime?.getManifest)
+  ? (api.runtime.getManifest()?.version || '1.3.1')
+  : '1.3.1';
+
+// Tracked new settings features. If any feature is unseen or the version is new,
+// the dot notification will appear on the settings icon until the user opens settings.
+const LATEST_SETTINGS_FEATURES = ['f2_support_v13', 'preferences_redesign_v13'];
+
+async function checkSettingsBadgeDot() {
+  const dot = document.getElementById('settings-badge-dot');
+  const f2NewPill = document.getElementById('f2-new-pill');
+  if (!dot) return;
+
+  try {
+    const res = await api.storage.local.get(['f1_seen_settings_ver', 'f1_seen_settings_features']);
+    const seenVer = res?.f1_seen_settings_ver || localStorage.getItem('f1_seen_settings_ver');
+    const seenFeatures = res?.f1_seen_settings_features || [];
+
+    const hasUnseenFeature = LATEST_SETTINGS_FEATURES.some(f => !seenFeatures.includes(f));
+    const isNewVersion = seenVer !== CURRENT_SETTINGS_VERSION;
+
+    if (isNewVersion || hasUnseenFeature) {
+      dot.style.display = 'block';
+      if (f2NewPill) f2NewPill.style.display = 'inline-block';
+    } else {
+      dot.style.display = 'none';
+      if (f2NewPill) f2NewPill.style.display = 'none';
+    }
+  } catch (_) {
+    const seenVer = localStorage.getItem('f1_seen_settings_ver');
+    if (seenVer !== CURRENT_SETTINGS_VERSION) {
+      dot.style.display = 'block';
+      if (f2NewPill) f2NewPill.style.display = 'inline-block';
+    }
+  }
+}
+
+async function markSettingsAsSeen() {
+  const dot = document.getElementById('settings-badge-dot');
+  if (dot) dot.style.display = 'none';
+
+  try {
+    await api.storage.local.set({
+      f1_seen_settings_ver: CURRENT_SETTINGS_VERSION,
+      f1_seen_settings_features: LATEST_SETTINGS_FEATURES
+    });
+    localStorage.setItem('f1_seen_settings_ver', CURRENT_SETTINGS_VERSION);
+  } catch (_) {}
 }
 
 // ============================================================
@@ -417,6 +484,7 @@ function setupNavigation() {
     btnOpenSettings.addEventListener('click', () => {
       viewMain.classList.remove('active');
       viewSettings.classList.add('active');
+      markSettingsAsSeen();
     });
   }
 
@@ -424,6 +492,8 @@ function setupNavigation() {
     btnCloseSettings.addEventListener('click', () => {
       viewSettings.classList.remove('active');
       viewMain.classList.add('active');
+      const f2Pill = document.getElementById('f2-new-pill');
+      if (f2Pill) f2Pill.style.display = 'none';
     });
   }
 }
@@ -2956,17 +3026,43 @@ function setupUIEventListeners() {
 
   // Settings: Master Alarm Toggle
   const masterToggle = document.getElementById('master-switch');
+  const alarmBox = document.getElementById('alarm-controls-box');
   if (masterToggle) {
     masterToggle.addEventListener('change', () => {
       if (currentSettings) {
         currentSettings.alarmEnabled = masterToggle.checked;
         saveSettings();
       }
+      if (alarmBox) {
+        alarmBox.classList.toggle('dimmed', !masterToggle.checked);
+      }
     });
   }
 
-  // Settings: Lead Time
+  // Settings: Lead Time & Custom Stepper
+  const leadOptions = [5, 10, 15, 30];
   const leadSelect = document.getElementById('lead-time-select');
+  const leadDisplay = document.getElementById('lead-display');
+  const btnLeadPrev = document.getElementById('btn-lead-prev');
+  const btnLeadNext = document.getElementById('btn-lead-next');
+
+  function cycleLeadTime(direction) {
+    const curVal = currentSettings?.leadTime || 10;
+    let idx = leadOptions.indexOf(curVal);
+    if (idx === -1) idx = 1;
+    idx = (idx + direction + leadOptions.length) % leadOptions.length;
+    const nextVal = leadOptions[idx];
+    if (leadDisplay) leadDisplay.textContent = `${nextVal}m before`;
+    if (leadSelect) {
+      leadSelect.value = String(nextVal);
+      leadSelect.dispatchEvent(new Event('change'));
+    }
+  }
+
+  if (btnLeadPrev) btnLeadPrev.addEventListener('click', () => cycleLeadTime(-1));
+  if (btnLeadNext) btnLeadNext.addEventListener('click', () => cycleLeadTime(1));
+  if (leadDisplay) leadDisplay.addEventListener('click', () => cycleLeadTime(1));
+
   if (leadSelect) {
     leadSelect.addEventListener('change', () => {
       if (currentSettings) {
@@ -2993,11 +3089,15 @@ function setupUIEventListeners() {
 
   // Push Notifications Settings
   const pushSwitch = document.getElementById('push-switch');
+  const pushBox = document.getElementById('push-controls-box');
   if (pushSwitch) {
     pushSwitch.addEventListener('change', () => {
       if (currentSettings) {
         currentSettings.pushEnabled = pushSwitch.checked;
         saveSettings();
+      }
+      if (pushBox) {
+        pushBox.classList.toggle('dimmed', !pushSwitch.checked);
       }
     });
   }
@@ -3497,14 +3597,16 @@ let radioAudioInstance = null;
 
 function testRadioAudio() {
   const txt = document.getElementById('test-radio-text');
+  const btn = document.getElementById('btn-test-radio');
 
   if (radioAudioInstance) {
     radioAudioInstance.pause();
     radioAudioInstance.currentTime = 0;
     radioAudioInstance = null;
+    if (btn) btn.classList.remove('active-stop');
   }
 
-  const vol = (currentSettings?.volume !== undefined ? currentSettings.volume : 85) / 100;
+  const vol = (currentSettings?.volume !== undefined ? currentSettings.volume : 65) / 100;
   const audioSrc = (typeof api !== 'undefined' && api?.runtime?.getURL)
     ? api.runtime.getURL('assets/f1_radio.mp3')
     : 'assets/f1_radio.mp3';
@@ -3513,6 +3615,12 @@ function testRadioAudio() {
   radioAudioInstance.volume = Math.max(0, Math.min(1, vol));
 
   if (txt) txt.textContent = 'Playing Radio Beep...';
+  if (btn) btn.classList.add('active-stop');
+
+  radioAudioInstance.addEventListener('ended', () => {
+    if (btn) btn.classList.remove('active-stop');
+    if (txt) txt.textContent = 'Test Radio';
+  });
 
   radioAudioInstance.play().then(() => {
     if (typeof api !== 'undefined' && api?.notifications?.create) {

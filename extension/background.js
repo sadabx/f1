@@ -34,6 +34,17 @@ api.runtime.onInstalled.addListener(async (details) => {
   await syncCalendarAndSchedule();
   await checkQualifyingAndNotify();
   
+  // If the extension was updated to a new version, reset seen settings so the badge dot appears
+  if (details.reason === 'update') {
+    try {
+      const currentVer = api.runtime.getManifest()?.version || '1.3.1';
+      const stored = await api.storage.local.get(['f1_seen_settings_ver']);
+      if (stored.f1_seen_settings_ver !== currentVer) {
+        await api.storage.local.remove(['f1_seen_settings_ver', 'f1_seen_settings_features']);
+      }
+    } catch (_) {}
+  }
+
   // Schedule calendar resync every 6 hours
   api.alarms.create('F1_CALENDAR_SYNC', { periodInMinutes: 360 });
 });
