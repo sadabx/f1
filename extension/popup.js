@@ -383,8 +383,8 @@ function saveSettings() {
 // SETTINGS UPDATE BADGE & "WHAT'S NEW" TRACKING
 // ============================================================
 const CURRENT_SETTINGS_VERSION = (typeof api !== 'undefined' && api?.runtime?.getManifest)
-  ? (api.runtime.getManifest()?.version || '1.3.1')
-  : '1.3.1';
+  ? (api.runtime.getManifest()?.version || '1.3.2')
+  : '1.3.2';
 
 // Tracked new settings features. If any feature is unseen or the version is new,
 // the dot notification will appear on the settings icon until the user opens settings.

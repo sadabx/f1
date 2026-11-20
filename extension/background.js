@@ -37,7 +37,7 @@ api.runtime.onInstalled.addListener(async (details) => {
   // If the extension was updated to a new version, reset seen settings so the badge dot appears
   if (details.reason === 'update') {
     try {
-      const currentVer = api.runtime.getManifest()?.version || '1.3.1';
+      const currentVer = api.runtime.getManifest()?.version || '1.3.2';
       const stored = await api.storage.local.get(['f1_seen_settings_ver']);
       if (stored.f1_seen_settings_ver !== currentVer) {
         await api.storage.local.remove(['f1_seen_settings_ver', 'f1_seen_settings_features']);
