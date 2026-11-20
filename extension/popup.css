@@ -2736,6 +2736,13 @@ body {
   font-weight: 700;
 }
 
+.timing-last-lap.is-no-time {
+  color: var(--text-dim);
+  font-weight: 600;
+  font-size: 8px;
+  letter-spacing: 0.3px;
+}
+
 .timing-row.is-retired {
   opacity: 0.55;
 }

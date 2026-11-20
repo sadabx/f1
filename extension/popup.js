@@ -494,6 +494,7 @@ function setupNavigation() {
       viewMain.classList.add('active');
       const f2Pill = document.getElementById('f2-new-pill');
       if (f2Pill) f2Pill.style.display = 'none';
+      stopThemeAudio();
     });
   }
 }
@@ -1895,30 +1896,21 @@ function renderLiveTimingTower() {
     if (item.retired) {
       timeStr = "OUT";
     } else if (isTimed) {
-      // In practice & qualifying, display the driver's best lap time
-      if (item.bestLapStr) {
-        timeStr = item.bestLapStr;
-      } else if (lastLap?.formatted) {
-        timeStr = lastLap.formatted;
-      } else if (lastLap?.lap_duration) {
-        timeStr = `${Math.floor(lastLap.lap_duration / 60)}:${(lastLap.lap_duration % 60).toFixed(3).padStart(6, "0")}`;
-      } else if (item.inPit) {
-        timeStr = "IN PIT";
+      // In practice & qualifying, display ONLY the driver's official best lap time
+      const bStr = (item.bestLapStr || "").trim();
+      if (bStr && bStr !== "" && !bStr.includes("--")) {
+        timeStr = bStr;
       } else {
-        timeStr = "—";
+        timeStr = "NO TIME";
       }
     } else {
-      // In race, display the last lap time or pit status
-      if (item.inPit) {
-        timeStr = "IN PIT";
-      } else if (lastLap?.formatted) {
+      // In race, display the last lap time (if under 5 minutes) or best lap
+      if (lastLap?.formatted && (!lastLap?.lap_duration || lastLap.lap_duration < 300)) {
         timeStr = lastLap.formatted;
-      } else if (lastLap?.lap_duration) {
-        timeStr = `${Math.floor(lastLap.lap_duration / 60)}:${(lastLap.lap_duration % 60).toFixed(3).padStart(6, "0")}`;
-      } else if (item.bestLapStr) {
+      } else if (item.bestLapStr && item.bestLapStr !== "" && !item.bestLapStr.includes("--")) {
         timeStr = item.bestLapStr;
       } else {
-        timeStr = "—";
+        timeStr = "NO TIME";
       }
     }
 
@@ -1965,7 +1957,7 @@ function renderLiveTimingTower() {
           ${showPitTag ? '<span class="timing-pit-tag" title="In Pit Lane">PIT</span>' : ""}
           ${isFastestLap ? `<span class="fastest-lap-badge" title="Fastest Lap (${activeFastestLap.formatted})">${FASTEST_LAP_SVG}</span>` : ""}
         </div>
-        <span class="timing-last-lap ${isFastestLap ? "is-fastest" : ""} ${timeStr === "IN PIT" ? "status-pit-text" : ""}">${isFastestLap ? activeFastestLap.formatted : timeStr}</span>
+        <span class="timing-last-lap ${isFastestLap ? "is-fastest" : ""} ${timeStr === "NO TIME" ? "is-no-time" : ""}">${isFastestLap ? activeFastestLap.formatted : timeStr}</span>
         <span class="timing-gap">${gapStr}</span>
         <div class="timing-tyre">
           <span class="tyre-compound ${tyre.compound || "medium"}">${tyreLetter}</span>
@@ -2068,11 +2060,9 @@ function processF1SignalRState() {
     if (isTimedSession) {
       if (bestSec && !isNaN(bestSec)) {
         latestLaps[num] = { lap_duration: bestSec, formatted: bestFormatted };
-      } else if (lastSec && !isNaN(lastSec)) {
-        latestLaps[num] = { lap_duration: lastSec, formatted: lastFormatted };
       }
     } else {
-      if (lastSec && !isNaN(lastSec)) {
+      if (lastSec && !isNaN(lastSec) && lastSec < 300) {
         latestLaps[num] = { lap_duration: lastSec, formatted: lastFormatted };
       } else if (bestSec && !isNaN(bestSec)) {
         latestLaps[num] = { lap_duration: bestSec, formatted: bestFormatted };
@@ -2082,7 +2072,7 @@ function processF1SignalRState() {
     if (bestSec && !isNaN(bestSec) && bestSec < bestTimeSec) {
       bestTimeSec = bestSec;
       fastestLap = { driverNumber: num, formatted: bestFormatted };
-    } else if (line.LastLapTime?.OverallFastest && lastFormatted) {
+    } else if (!isTimedSession && line.LastLapTime?.OverallFastest && lastFormatted && lastSec < 300) {
       fastestLap = { driverNumber: num, formatted: lastFormatted };
     }
   });
@@ -3036,6 +3026,9 @@ function setupUIEventListeners() {
       if (alarmBox) {
         alarmBox.classList.toggle('dimmed', !masterToggle.checked);
       }
+      if (!masterToggle.checked) {
+        stopThemeAudio();
+      }
     });
   }
 
@@ -3312,9 +3305,11 @@ function testThemeAudio() {
 
   if (audioTestInstance) {
     stopThemeAudio();
+    return;
   }
 
   const vol = (currentSettings?.volume !== undefined ? currentSettings.volume : 85) / 100;
+  const leadMin = currentSettings?.leadTime || 10;
   const audioSrc = (typeof api !== "undefined" && api?.runtime?.getURL)
     ? api.runtime.getURL("assets/f1_theme.mp3")
     : "assets/f1_theme.mp3";
@@ -3323,6 +3318,7 @@ function testThemeAudio() {
   audioTestInstance.volume = Math.max(0, Math.min(1, vol));
 
   if (txt) txt.textContent = "Playing Sound...";
+  if (btnTest) btnTest.style.display = "none";
   if (btnStop) btnStop.style.display = "inline-flex";
 
   audioTestInstance.onended = () => {
@@ -3335,7 +3331,7 @@ function testThemeAudio() {
         type: "basic",
         iconUrl: api.runtime.getURL("assets/icon128.png"),
         title: "🏎️ F1 Live Alert: Alarm Test Active!",
-        message: "Lights out in 5 minutes! Playing official F1 Theme.",
+        message: `Lights out in ${leadMin} minutes! Playing official F1 Theme.`,
         priority: 2
       });
     }
@@ -3348,6 +3344,7 @@ function testThemeAudio() {
 }
 
 function stopThemeAudio() {
+  const btnTest = document.getElementById("btn-test-alarm");
   const btnStop = document.getElementById("btn-stop-alarm");
   const txt = document.getElementById("test-btn-text");
 
@@ -3362,6 +3359,7 @@ function stopThemeAudio() {
   }
 
   if (txt) txt.textContent = "Test Alarm";
+  if (btnTest) btnTest.style.display = "inline-flex";
   if (btnStop) btnStop.style.display = "none";
 }
 
@@ -3604,6 +3602,8 @@ function testRadioAudio() {
     radioAudioInstance.currentTime = 0;
     radioAudioInstance = null;
     if (btn) btn.classList.remove('active-stop');
+    if (txt) txt.textContent = 'Test Radio';
+    return;
   }
 
   const vol = (currentSettings?.volume !== undefined ? currentSettings.volume : 65) / 100;
