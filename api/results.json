@@ -3,6 +3,7 @@
     "RaceTable": {
       "Races": [
         {
+          "round": "1",
           "raceName": "Australia Grand Prix",
           "Results": [
             {
@@ -29,10 +30,10 @@
                 "code": "LEC"
               }
             }
-          ],
-          "round": "1"
+          ]
         },
         {
+          "round": "2",
           "raceName": "China Grand Prix",
           "Results": [
             {
@@ -59,10 +60,10 @@
                 "code": "HAM"
               }
             }
-          ],
-          "round": "2"
+          ]
         },
         {
+          "round": "3",
           "raceName": "Japan Grand Prix",
           "Results": [
             {
@@ -89,10 +90,10 @@
                 "code": "LEC"
               }
             }
-          ],
-          "round": "3"
+          ]
         },
         {
+          "round": "4",
           "raceName": "Miami Grand Prix",
           "Results": [
             {
@@ -119,10 +120,10 @@
                 "code": "PIA"
               }
             }
-          ],
-          "round": "4"
+          ]
         },
         {
+          "round": "5",
           "raceName": "Canada Grand Prix",
           "Results": [
             {
@@ -149,10 +150,10 @@
                 "code": "VER"
               }
             }
-          ],
-          "round": "5"
+          ]
         },
         {
+          "round": "6",
           "raceName": "Monaco Grand Prix",
           "Results": [
             {
@@ -179,11 +180,11 @@
                 "code": "HAD"
               }
             }
-          ],
-          "round": "6"
+          ]
         },
         {
-          "raceName": "Barcelona Catalunya Grand Prix",
+          "round": "7",
+          "raceName": "Spain Grand Prix",
           "Results": [
             {
               "position": "1",
@@ -209,10 +210,10 @@
                 "code": "NOR"
               }
             }
-          ],
-          "round": "7"
+          ]
         },
         {
+          "round": "8",
           "raceName": "Austria Grand Prix",
           "Results": [
             {
@@ -239,10 +240,10 @@
                 "code": "ANT"
               }
             }
-          ],
-          "round": "8"
+          ]
         },
         {
+          "round": "9",
           "raceName": "Great Britain Grand Prix",
           "Results": [
             {
@@ -269,10 +270,10 @@
                 "code": "HAM"
               }
             }
-          ],
-          "round": "9"
+          ]
         },
         {
+          "round": "10",
           "raceName": "Belgium Grand Prix",
           "Results": [
             {
@@ -299,10 +300,10 @@
                 "code": "VER"
               }
             }
-          ],
-          "round": "10"
+          ]
         },
         {
+          "round": "11",
           "raceName": "Hungary Grand Prix",
           "Results": [
             {
@@ -329,10 +330,10 @@
                 "code": "ANT"
               }
             }
-          ],
-          "round": "11"
+          ]
         },
         {
+          "round": "12",
           "raceName": "Netherlands Grand Prix",
           "Results": [
             {
@@ -359,10 +360,10 @@
                 "code": "RUS"
               }
             }
-          ],
-          "round": "12"
+          ]
         },
         {
+          "round": "13",
           "raceName": "Italy Grand Prix",
           "Results": [
             {
@@ -389,11 +390,11 @@
                 "code": "VER"
               }
             }
-          ],
-          "round": "13"
+          ]
         },
         {
-          "raceName": "Spain Grand Prix",
+          "round": "14",
+          "raceName": "Spanish Grand Prix",
           "Results": [
             {
               "position": "1",
@@ -419,10 +420,10 @@
                 "code": "NOR"
               }
             }
-          ],
-          "round": "14"
+          ]
         },
         {
+          "round": "15",
           "raceName": "Azerbaijan Grand Prix",
           "Results": [
             {
@@ -449,10 +450,10 @@
                 "code": "HAD"
               }
             }
-          ],
-          "round": "15"
+          ]
         },
         {
+          "round": "16",
           "raceName": "Bahrain Grand Prix",
           "Results": [
             {
@@ -479,10 +480,10 @@
                 "code": "HAM"
               }
             }
-          ],
-          "round": "16"
+          ]
         },
         {
+          "round": "17",
           "raceName": "Singapore Grand Prix",
           "Results": [
             {
@@ -509,10 +510,10 @@
                 "code": "ANT"
               }
             }
-          ],
-          "round": "17"
+          ]
         },
         {
+          "round": "18",
           "raceName": "United States Grand Prix",
           "Results": [
             {
@@ -539,10 +540,10 @@
                 "code": "VER"
               }
             }
-          ],
-          "round": "18"
+          ]
         },
         {
+          "round": "19",
           "raceName": "Mexico Grand Prix",
           "Results": [
             {
@@ -569,8 +570,37 @@
                 "code": "ANT"
               }
             }
-          ],
-          "round": "19"
+          ]
+        },
+        {
+          "round": "20",
+          "raceName": "Brazilian Grand Prix",
+          "Results": [
+            {
+              "position": "1",
+              "Driver": {
+                "givenName": "Lando",
+                "familyName": "Norris",
+                "code": "NOR"
+              }
+            },
+            {
+              "position": "2",
+              "Driver": {
+                "givenName": "Max",
+                "familyName": "Verstappen",
+                "code": "VER"
+              }
+            },
+            {
+              "position": "3",
+              "Driver": {
+                "givenName": "Isack",
+                "familyName": "Hadjar",
+                "code": "HAD"
+              }
+            }
+          ]
         }
       ]
     }

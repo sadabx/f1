@@ -271,7 +271,7 @@ function initOnlineOfflineListeners() {
   window.addEventListener("online", () => {
     updateStatus();
     // Re-sync active tab when network connection is restored
-    if (activeTab === "tab-schedule") loadScheduleData();
+    if (activeTab === "tab-weekend") loadScheduleData();
     else if (activeTab === "tab-standings") loadStandings();
     else if (activeTab === "tab-results") loadResults();
     else if (activeTab === "tab-live") loadLiveTelemetry();
@@ -1417,12 +1417,17 @@ async function loadResults() {
   // 1. Instant offline/startup render from local storage cache
   try {
     const cached = await api.storage.local.get("f1_cached_results");
-    if (cached.f1_cached_results?.data && Array.isArray(cached.f1_cached_results.data) && cached.f1_cached_results.data.length > 0) {
+    if (cached.f1_cached_results?.source === "verified-api" &&
+        Array.isArray(cached.f1_cached_results.data) &&
+        cached.f1_cached_results.data.length > 0) {
       allResultsRaces = cached.f1_cached_results.data;
       if (cached.f1_cached_results.qualifyingData) {
         latestQualifyingData = cached.f1_cached_results.qualifyingData;
       }
       loadedFromCache = true;
+    } else if (cached.f1_cached_results) {
+      // Do not resurrect Results-tab data saved before the verified API-only policy.
+      await api.storage.local.remove("f1_cached_results");
     }
   } catch (_) {}
 
@@ -1448,62 +1453,6 @@ async function loadResults() {
     const data = await resResults.json();
     const races = data?.MRData?.RaceTable?.Races || [];
     allResultsRaces = races;
-
-    // Resilient Fallback: If a scheduled race has concluded but is not yet in results.json, fetch latest classification from OpenF1
-    const now = Date.now();
-    const completedRaces = (allRaces || []).filter(rc => {
-      const raceTime = new Date(`${rc.date}T${rc.time || "12:00:00Z"}`).getTime();
-      return (raceTime + (2 * 3600 * 1000)) < now;
-    });
-    const latestCompletedScheduled = completedRaces.length > 0 ? completedRaces[completedRaces.length - 1] : null;
-
-    if (latestCompletedScheduled && (!races.length || !races.some(r => String(r.round) === String(latestCompletedScheduled.round)))) {
-      try {
-        const [resRes, drvRes] = await Promise.all([
-          fetch("https://api.openf1.org/v1/session_result?session_key=latest").catch(() => null),
-          fetch("https://api.openf1.org/v1/drivers?session_key=latest").catch(() => null)
-        ]);
-        if (resRes && resRes.ok) {
-          const resData = await resRes.json();
-          const drvData = (drvRes && drvRes.ok) ? await drvRes.json() : [];
-          const drvMap = {};
-          if (Array.isArray(drvData)) {
-            drvData.forEach(d => {
-              drvMap[d.driver_number] = {
-                code: d.name_acronym || `#${d.driver_number}`,
-                givenName: d.first_name || "",
-                familyName: d.last_name || ""
-              };
-            });
-          }
-
-          if (Array.isArray(resData) && resData.length > 0) {
-            const sorted = resData.slice().sort((a, b) => (a.position || 99) - (b.position || 99));
-            const podiumResults = sorted.slice(0, 3).map(item => {
-              const meta = drvMap[item.driver_number] || STATIC_DRIVERS[item.driver_number] || {};
-              return {
-                position: String(item.position),
-                Driver: {
-                  givenName: meta.givenName || meta.name?.split(" ")?.[0] || "",
-                  familyName: meta.familyName || meta.name?.split(" ")?.slice(1)?.join(" ") || "",
-                  code: meta.code || `#${item.driver_number}`
-                }
-              };
-            });
-
-            if (podiumResults.length > 0) {
-              const liveRaceResult = {
-                round: String(latestCompletedScheduled.round),
-                raceName: latestCompletedScheduled.raceName,
-                Results: podiumResults
-              };
-              races.push(liveRaceResult);
-              allResultsRaces = races;
-            }
-          }
-        }
-      } catch (_) {}
-    }
 
     // Check qualifying data
     if (resQuali && resQuali.ok) {
@@ -1637,6 +1586,7 @@ async function loadResults() {
       api.storage.local.set({
         f1_cached_results: {
           timestamp: Date.now(),
+          source: "verified-api",
           data: allResultsRaces,
           qualifyingData: latestQualifyingData
         }
@@ -1651,42 +1601,8 @@ async function loadResults() {
 }
 
 // ============================================================
-// TAB 4: LIVE TELEMETRY, NITROUS STATUS & TIMING TOWER (OpenF1)
+// TAB 4: LIVE TELEMETRY & TIMING TOWER (Official F1 SignalR)
 // ============================================================
-// Fallback verified telemetry data for session 11388 (Singapore GP) when OpenF1 unauthenticated API rate limits
-const FALLBACK_TYRE_DATA = {
-  3: { compound: 'medium', laps: 30 },
-  16: { compound: 'soft', laps: 26 },
-  12: { compound: 'soft', laps: 26 },
-  1: { compound: 'medium', laps: 30 },
-  81: { compound: 'soft', laps: 21 },
-  44: { compound: 'soft', laps: 47 },
-  30: { compound: 'medium', laps: 31 },
-  27: { compound: 'soft', laps: 32 },
-  63: { compound: 'soft', laps: 23 },
-  6: { compound: 'soft', laps: 61 },
-  10: { compound: 'soft', laps: 35 },
-  87: { compound: 'medium', laps: 28 },
-  31: { compound: 'medium', laps: 33 },
-  55: { compound: 'medium', laps: 30 },
-  41: { compound: 'soft', laps: 38 }
-};
-
-const FALLBACK_LAP_TIMES = {
-  3: { lap_duration: 97.840 },
-  16: { lap_duration: 97.660 },
-  12: { lap_duration: 97.846 },
-  1: { lap_duration: 102.030 },
-  81: { lap_duration: 97.799 },
-  44: { lap_duration: 100.601 },
-  30: { lap_duration: 97.853 },
-  27: { lap_duration: 97.671 },
-  63: { lap_duration: 97.934 },
-  6: { lap_duration: 100.757 }
-};
-
-const FALLBACK_FASTEST_LAP = { driverNumber: 16, formatted: '1:37.660' };
-
 const CIRCUIT_TOTAL_LAPS = {
   australia: 58, melbourne: 58, china: 56, shanghai: 56,
   japan: 53, suzuka: 53, miami: 57, canada: 70, montreal: 70,
@@ -1779,6 +1695,7 @@ let liveWebSocket = null;
 let isConnectingSignalR = false;
 let signalRHeartbeatTimer = null;
 let liveTabRefreshInterval = null;
+let activeLiveSessionId = null;
 let liveSignalRState = {
   driverList: {},
   timingData: { Lines: {} },
@@ -1786,6 +1703,53 @@ let liveSignalRState = {
   trackStatus: { Status: "1", Message: "AllClear" },
   sessionInfo: null
 };
+
+function getScheduledLiveContext() {
+  const race = allRaces?.[actualNextRaceIndex];
+  if (!race) return { race: null, session: null };
+
+  const now = Date.now();
+  const session = extractRaceSessions(race).find(item => {
+    const duration = SESSION_DURATIONS[item.type] || (60 * 60 * 1000);
+    return now >= item.t && now < item.t + duration + (35 * 60 * 1000);
+  }) || null;
+
+  return { race, session };
+}
+
+function clearLiveTelemetryCache() {
+  cachedLiveTelemetry = null;
+  try { localStorage.removeItem("f1_cached_telemetry"); } catch (_) {}
+}
+
+function resetLiveSignalRState() {
+  liveSignalRState = {
+    driverList: {},
+    timingData: { Lines: {} },
+    timingAppData: { Lines: {} },
+    trackStatus: { Status: "1", Message: "AllClear" },
+    sessionInfo: null
+  };
+}
+
+function stopLiveConnection() {
+  if (signalRHeartbeatTimer) {
+    clearInterval(signalRHeartbeatTimer);
+    signalRHeartbeatTimer = null;
+  }
+  if (liveWebSocket) {
+    try { liveWebSocket.close(); } catch (_) {}
+    liveWebSocket = null;
+  }
+}
+
+function renderNoLiveSession(message = "No live session active currently. Telemetry starts automatically during race weekends.") {
+  const tower = document.getElementById("timing-tower-list");
+  const banner = document.getElementById("live-broadcast-banner");
+  if (banner) banner.style.display = "none";
+  updateSessionProgressBadge(null, null, null, null, false);
+  if (tower) setSafeContent(tower, `<div class="loading-state">${message}</div>`);
+}
 
 function deepMerge(target, source) {
   if (!source || typeof source !== "object") return target;
@@ -1808,6 +1772,11 @@ function renderLiveTimingTower() {
   const banner = document.getElementById("live-broadcast-banner");
   const bannerTitle = document.getElementById("live-banner-title");
   const bannerStatus = document.getElementById("live-banner-status");
+
+  if (!sessionProgress?.isLive) {
+    renderNoLiveSession();
+    return;
+  }
 
   const sType = String(sessionProgress?.sessionType || "race").toLowerCase();
   const isTimed = sType === "fp" || sType === "sq" || sType === "quali" || sType.includes("practice") || sType.includes("quali") || sType.includes("shootout");
@@ -1854,9 +1823,6 @@ function renderLiveTimingTower() {
       true,
       sessionProgress.isOpenF1Restricted
     );
-  } else {
-    if (banner) banner.style.display = "none";
-    updateSessionProgressBadge(null, null, null, null, false);
   }
 
   if (!sortedDrivers || sortedDrivers.length === 0) {
@@ -1984,14 +1950,15 @@ function processF1SignalRState() {
   if (Object.keys(lines).length === 0 && Object.keys(driverList || {}).length === 0) return;
 
   const now = Date.now();
-  let scheduledRace = (allRaces && allRaces.length > 0) ? allRaces[actualNextRaceIndex] : null;
-  let scheduledActiveSession = null;
-  if (scheduledRace) {
-    const raceSessions = extractRaceSessions(scheduledRace);
-    scheduledActiveSession = raceSessions.find(s => {
-      const dur = SESSION_DURATIONS[s.type] || (60 * 60 * 1000);
-      return now >= s.t && now < (s.t + dur);
-    }) || null;
+  const { race: scheduledRace, session: scheduledActiveSession } = getScheduledLiveContext();
+
+  // SignalR retains the latest completed session. Ignore it unless the local
+  // calendar confirms that the matching race weekend is currently active.
+  if (!scheduledActiveSession) {
+    clearLiveTelemetryCache();
+    renderNoLiveSession();
+    updateLiveBeaconState(false);
+    return;
   }
 
   // Determine session type & timed flag
@@ -2168,7 +2135,7 @@ function processF1SignalRState() {
 
   const statusStr = String(sessionInfo?.SessionStatus || "").toLowerCase();
   const isSessionFinished = statusStr === "finalised" || statusStr === "finished";
-  const isLive = Boolean(scheduledActiveSession) || (Boolean(sessionInfo) && !isSessionFinished);
+  const isLive = Boolean(scheduledActiveSession) && !isSessionFinished;
 
   if (isSessionFinished && statusPill && statusLabel) {
     statusPill.className = "nitrous-status-pill status-dim";
@@ -2181,7 +2148,8 @@ function processF1SignalRState() {
     totalLaps,
     endTime: scheduledActiveSession ? (scheduledActiveSession.t + (SESSION_DURATIONS[scheduledActiveSession.type] || 3600000)) : null,
     isLive,
-    isSignalR: true
+    isSignalR: true,
+    sessionId: `${scheduledRace?.round || "unknown"}_${scheduledActiveSession.code}_${scheduledActiveSession.t}`
   };
 
   updateLiveBeaconState(isLive);
@@ -2365,7 +2333,7 @@ function connectF1LiveTiming() {
           signalRHeartbeatTimer = null;
         }
         if (liveWebSocket === ws) liveWebSocket = null;
-        if (activeTab === "tab-live") {
+        if (activeTab === "tab-live" && getScheduledLiveContext().session) {
           setTimeout(() => {
             if (activeTab === "tab-live" && !liveWebSocket) {
               connectF1LiveTiming();
@@ -2382,7 +2350,7 @@ function connectF1LiveTiming() {
   });
 }
 
-async function loadLiveTelemetry() {
+async function loadLegacyOpenF1Telemetry() {
   const tower = document.getElementById("timing-tower-list");
   const statusPill = document.getElementById("track-status-pill");
   const statusLabel = document.getElementById("track-status-label");
@@ -2950,6 +2918,82 @@ async function loadLiveTelemetry() {
     if (badge) badge.style.display = "none";
     const banner = document.getElementById("live-broadcast-banner");
     if (banner) banner.style.display = "none";
+  }
+}
+
+async function loadLiveTelemetry() {
+  const tower = document.getElementById("timing-tower-list");
+  const statusPill = document.getElementById("track-status-pill");
+  const statusLabel = document.getElementById("track-status-label");
+
+  if (currentSeries !== "f1" || currentSeasonYear !== ACTIVE_SEASON_YEAR) {
+    clearLiveTelemetryCache();
+    stopLiveConnection();
+    if (statusPill && statusLabel) {
+      statusPill.className = "nitrous-status-pill status-dim";
+      statusLabel.textContent = "UPCOMING";
+    }
+    renderNoLiveSession(`Live timing is available for active ${ACTIVE_SEASON_YEAR} Formula 1 sessions.`);
+    return;
+  }
+
+  if (!navigator.onLine) {
+    clearLiveTelemetryCache();
+    if (statusPill && statusLabel) {
+      statusPill.className = "nitrous-status-pill status-red";
+      statusLabel.textContent = "OFFLINE";
+    }
+    if (tower) setSafeContent(tower, '<div class="loading-state">Live timing requires an internet connection.</div>');
+    return;
+  }
+
+  if (!allRaces?.length) {
+    await loadScheduleData();
+  }
+
+  const { race, session } = getScheduledLiveContext();
+  if (!race || !session) {
+    clearLiveTelemetryCache();
+    activeLiveSessionId = null;
+    stopLiveConnection();
+    updateLiveBeaconState(false);
+    if (statusPill && statusLabel) {
+      statusPill.className = "nitrous-status-pill status-dim";
+      statusLabel.textContent = "NO SESSION";
+    }
+    renderNoLiveSession();
+    return;
+  }
+
+  const sessionId = `${race.round}_${session.code}_${session.t}`;
+  if (activeLiveSessionId !== sessionId) {
+    activeLiveSessionId = sessionId;
+    clearLiveTelemetryCache();
+    resetLiveSignalRState();
+    stopLiveConnection();
+  }
+
+  if (!liveTabRefreshInterval) {
+    liveTabRefreshInterval = setInterval(() => {
+      if (activeTab === "tab-live") loadLiveTelemetry();
+    }, 15000);
+  }
+
+  if (statusPill && statusLabel) {
+    statusPill.className = "nitrous-status-pill status-dim";
+    statusLabel.textContent = "CONNECTING";
+  }
+  if (tower && !cachedLiveTelemetry) {
+    setSafeContent(tower, '<div class="loading-state">Connecting to Formula 1 Live Timing…</div>');
+  }
+
+  const connected = await connectF1LiveTiming();
+  if (!connected || !Object.keys(liveSignalRState.timingData?.Lines || {}).length) {
+    if (statusPill && statusLabel) {
+      statusPill.className = "nitrous-status-pill status-dim";
+      statusLabel.textContent = "RETRYING";
+    }
+    if (tower) setSafeContent(tower, '<div class="loading-state">Official live timing is temporarily unavailable. Retrying automatically…</div>');
   }
 }
 
