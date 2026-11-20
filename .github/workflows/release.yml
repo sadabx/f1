@@ -132,3 +132,110 @@ jobs:
           else
             echo "Mozilla AMO credentials not found, skipping Firefox Add-ons upload."
           fi
+
+      - name: Push to Microsoft Edge Add-ons
+        env:
+          EDGE_ADDONS_API_KEY: ${{ secrets.EDGE_ADDONS_API_KEY }}
+          EDGE_ADDONS_CLIENT_ID: ${{ secrets.EDGE_ADDONS_CLIENT_ID }}
+          EDGE_ADDONS_PRODUCT_ID: ${{ secrets.EDGE_ADDONS_PRODUCT_ID }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${EDGE_ADDONS_API_KEY:-}" || -z "${EDGE_ADDONS_CLIENT_ID:-}" || -z "${EDGE_ADDONS_PRODUCT_ID:-}" ]]; then
+            echo "Edge Add-ons credentials are not configured; skipping Edge submission."
+            exit 0
+          fi
+
+          api="https://api.addons.microsoftedge.microsoft.com/v1/products/${EDGE_ADDONS_PRODUCT_ID}"
+          headers=(
+            -H "Authorization: ApiKey ${EDGE_ADDONS_API_KEY}"
+            -H "X-ClientID: ${EDGE_ADDONS_CLIENT_ID}"
+          )
+
+          echo "Uploading Chromium package for ${RELEASE_TAG} to Microsoft Edge Add-ons..."
+          upload_headers="$(mktemp)"
+          upload_status="$(curl --silent --show-error --output upload-response.json \
+            --dump-header "$upload_headers" --write-out '%{http_code}' \
+            "${headers[@]}" -H 'Content-Type: application/zip' \
+            --request POST --data-binary @extension/f1_dash_chrome.zip \
+            "${api}/submissions/draft/package")"
+
+          if [[ "$upload_status" != "202" ]]; then
+            cat upload-response.json
+            echo "Edge package upload failed with HTTP ${upload_status}."
+            exit 1
+          fi
+
+          operation_id="$(awk 'BEGIN {IGNORECASE=1} /^Location:/ {gsub("\\r", ""); sub(".*/", "", $2); print $2}' "$upload_headers")"
+          if [[ -z "$operation_id" ]]; then
+            cat upload-response.json
+            echo "Edge upload response did not include an operation ID."
+            exit 1
+          fi
+
+          upload_ready=false
+          for attempt in $(seq 1 30); do
+            response="$(curl --silent --show-error "${headers[@]}" \
+              "${api}/submissions/draft/package/operations/${operation_id}")"
+            status="$(printf '%s' "$response" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("status", ""))')"
+            if [[ "$status" == "Succeeded" ]]; then
+              upload_ready=true
+              break
+            elif [[ "$status" == "Failed" ]]; then
+              printf '%s\n' "$response"
+              echo "Edge package validation failed."
+              exit 1
+            fi
+            sleep 10
+          done
+
+          if [[ "$upload_ready" != true ]]; then
+            echo "Timed out waiting for Edge package validation."
+            exit 1
+          fi
+
+          echo "Submitting the validated package to Microsoft Edge Add-ons for certification..."
+          publish_headers="$(mktemp)"
+          publish_status="$(curl --silent --show-error --output publish-response.json \
+            --dump-header "$publish_headers" --write-out '%{http_code}' \
+            "${headers[@]}" -H 'Content-Type: text/plain' \
+            --request POST --data "F1 Dash release ${RELEASE_TAG}. See the GitHub release notes for details." \
+            "${api}/submissions")"
+
+          if [[ "$publish_status" != "202" ]]; then
+            cat publish-response.json
+            echo "Edge submission failed with HTTP ${publish_status}."
+            exit 1
+          fi
+
+          publish_operation_id="$(awk 'BEGIN {IGNORECASE=1} /^Location:/ {gsub("\\r", ""); sub(".*/", "", $2); print $2}' "$publish_headers")"
+          if [[ -z "$publish_operation_id" ]]; then
+            cat publish-response.json
+            echo "Edge submission response did not include an operation ID."
+            exit 1
+          fi
+
+          publish_ready=false
+          for attempt in $(seq 1 30); do
+            response="$(curl --silent --show-error "${headers[@]}" \
+              "${api}/submissions/operations/${publish_operation_id}")"
+            status="$(printf '%s' "$response" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("status", ""))')"
+            if [[ "$status" == "Succeeded" ]]; then
+              publish_ready=true
+              break
+            elif [[ "$status" == "Failed" ]]; then
+              printf '%s\n' "$response"
+              echo "Edge submission failed."
+              exit 1
+            fi
+            sleep 10
+          done
+
+          if [[ "$publish_ready" != true ]]; then
+            echo "Timed out waiting for Edge to accept the submission."
+            exit 1
+          fi
+
+          echo "Edge submission accepted for certification."
