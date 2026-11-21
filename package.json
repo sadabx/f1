@@ -1,0 +1,10 @@
+{
+  "name": "f1-dash",
+  "version": "1.3.4",
+  "private": true,
+  "scripts": {
+    "test": "node tests/test-phantom-podium.js",
+    "test:live": "node tests/test-live-data.js",
+    "test:all": "npm run test && npm run test:live"
+  }
+}
