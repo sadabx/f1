@@ -299,25 +299,31 @@
 
       var ua = navigator.userAgent || "";
       var browser = "chrome";
-      // Prefer userAgentData (more reliable in modern Chromium browsers)
+      var isEdge = /Edg/i.test(ua);
+      var isFirefox = /Firefox/i.test(ua) && !/Seamonkey/i.test(ua);
       if (navigator.userAgentData && navigator.userAgentData.brands) {
-        var brands = navigator.userAgentData.brands.map(function (b) { return b.brand.toLowerCase(); }).join(" ");
-        if (brands.indexOf("firefox") !== -1) browser = "firefox";
-        else if (brands.indexOf("edge") !== -1 || brands.indexOf("microsoft edge") !== -1) browser = "edge";
-        else if (brands.indexOf("chrome") !== -1 || brands.indexOf("chromium") !== -1) browser = "chrome";
-      } else {
-        if (/Firefox/i.test(ua) && !/Seamonkey/i.test(ua)) browser = "firefox";
-        else if (/Edg/i.test(ua)) browser = "edge";
-        else if (/Chrome/i.test(ua)) browser = "chrome";
+        var brands = navigator.userAgentData.brands.map(function (b) { return (b.brand || "").toLowerCase(); }).join(" ");
+        if (brands.indexOf("edge") !== -1) isEdge = true;
+        if (brands.indexOf("firefox") !== -1) isFirefox = true;
       }
+      if (isFirefox) browser = "firefox";
+      else if (isEdge) browser = "edge";
+      else browser = "chrome";
 
       var primary = stores[browser];
-      var btn = document.getElementById("ext-install-btn");
-      var label = document.getElementById("ext-install-text");
-      if (btn && primary) { btn.href = primary.href; }
-      if (label && primary) { label.textContent = primary.text; }
+      function applyLink() {
+        var btn = document.getElementById("ext-install-btn");
+        var label = document.getElementById("ext-install-text");
+        if (btn && primary) {
+          btn.href = primary.href;
+          btn.setAttribute("href", primary.href);
+        }
+        if (label && primary) { label.textContent = primary.text; }
+      }
+      applyLink();
+      setTimeout(applyLink, 100);
+      setTimeout(applyLink, 500);
 
-      // Remove the matching store from the secondary links to avoid duplicates
       var secondaryContainer = document.getElementById("ext-secondary-links");
       if (secondaryContainer) {
         var labels = { firefox: "Firefox", edge: "Edge", chrome: "Chrome & Brave" };
