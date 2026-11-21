@@ -3,6 +3,12 @@
 venv/
 scratch/
 graphify-out/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
 # Extension build artifacts
 extension/*.zip
 extension/*.xpi

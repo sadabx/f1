@@ -4,6 +4,7 @@ Formula 1 real-time schedule web dashboard, companion browser extension, and fre
 
 - **Live Dashboard:** [f1.trionine.com](https://f1.trionine.com)
 - **Firefox Add-on:** [addons.mozilla.org/firefox/addon/f1-dash](https://addons.mozilla.org/firefox/addon/f1-dash/)
+- **Microsoft Edge Add-on:** [microsoftedge.microsoft.com/addons/detail/f1-dash](https://microsoftedge.microsoft.com/addons/detail/f1-dash/bhjaiaenljechcgogkioimliaeagjklj)
 - **Chromium Build (Brave, Chrome, Edge):** Available under [Releases](https://github.com/sadabx/f1/releases)
 
 ---

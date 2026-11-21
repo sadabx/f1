@@ -216,8 +216,8 @@ def scrape_standings():
             }
         }
 
-        os.makedirs("api", exist_ok=True)
-        with open("api/standings.json", "w", encoding="utf-8") as f:
+        os.makedirs("web/api", exist_ok=True)
+        with open("web/api/standings.json", "w", encoding="utf-8") as f:
             json.dump(ergast_json, f, indent=2)
         print("✅ Standings updated successfully.")
 
@@ -330,8 +330,8 @@ def scrape_race_results(name_to_round):
             }
         }
 
-        os.makedirs("api", exist_ok=True)
-        with open("api/results.json", "w", encoding="utf-8") as f:
+        os.makedirs("web/api", exist_ok=True)
+        with open("web/api/results.json", "w", encoding="utf-8") as f:
             json.dump(ergast_json, f, indent=2)
         print("✅ Full Race Results (Podiums) updated successfully.")
 
@@ -476,8 +476,8 @@ def scrape_qualifying_results(name_to_round):
             }
         }
         
-        os.makedirs("api", exist_ok=True)
-        with open("api/qualifying.json", "w", encoding="utf-8") as f:
+        os.makedirs("web/api", exist_ok=True)
+        with open("web/api/qualifying.json", "w", encoding="utf-8") as f:
             json.dump(ergast_json, f, indent=2)
         print("✅ Qualifying Results updated successfully.")
         
@@ -485,7 +485,7 @@ def scrape_qualifying_results(name_to_round):
         print(f"❌ Failed to scrape qualifying details: {e}")
         raise e
 
-def generate_clean_calendar(year=CURRENT_YEAR, output_path="api/current.json", required=True):
+def generate_clean_calendar(year=CURRENT_YEAR, output_path="web/api/current.json", required=True):
     print(f"Fetching Complete Session Calendar ({year}) from F1Calendar.com...")
     url = f"https://raw.githubusercontent.com/sportstimes/f1/main/_db/f1/{year}.json"
     
@@ -550,7 +550,7 @@ def generate_clean_calendar(year=CURRENT_YEAR, output_path="api/current.json", r
             }
         }
 
-        os.makedirs(os.path.dirname(output_path) or "api", exist_ok=True)
+        os.makedirs(os.path.dirname(output_path) or "web/api", exist_ok=True)
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(ergast_json, f, indent=2)
         print(f"✅ Calendar ({year}) cached to {output_path} successfully.")
@@ -566,8 +566,8 @@ if __name__ == "__main__":
         scrape_standings()
         scrape_race_results(name_to_round)
         scrape_qualifying_results(name_to_round)
-        generate_clean_calendar(CURRENT_YEAR, "api/current.json", required=True)
-        generate_clean_calendar("2027", "api/2027.json", required=False)
+        generate_clean_calendar(CURRENT_YEAR, "web/api/current.json", required=True)
+        generate_clean_calendar("2027", "web/api/2027.json", required=False)
         print("🚀 API generation completed successfully!")
     except Exception as main_error:
         print(f"💥 Critical API build failure: {main_error}")
