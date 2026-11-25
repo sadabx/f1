@@ -5,9 +5,11 @@ const api = typeof browser !== 'undefined' ? browser : chrome;
 
 const DEFAULT_SETTINGS = {
   masterEnabled: true,
+  alarmEnabled: true,
   leadMinutes: 5, // 5 minutes before session start
+  leadTime: 5,
   soundEnabled: true,
-  volume: 0.85,
+  volume: 85, // Stored as 0..100 integer matching popup slider
   sessions: {
     fp: true,     // Practice 1, 2, 3
     sq: true,     // Sprint Qualifying
@@ -24,6 +26,8 @@ const CALENDAR_API = 'https://f1.trionine.com/api/current.json';
 
 let currentAudio = null;
 let currentSynthOscs = [];
+let isSyncingAlarms = false;
+let pendingAlarmResync = false;
 
 // ============================================================
 // INITIALIZATION
@@ -33,17 +37,6 @@ api.runtime.onInstalled.addListener(async (details) => {
   await initSettings();
   await syncCalendarAndSchedule();
   await checkQualifyingAndNotify();
-  
-  // If the extension was updated to a new version, reset seen settings so the badge dot appears
-  if (details.reason === 'update') {
-    try {
-      const currentVer = api.runtime.getManifest()?.version || '1.3.2';
-      const stored = await api.storage.local.get(['f1_seen_settings_ver']);
-      if (stored.f1_seen_settings_ver !== currentVer) {
-        await api.storage.local.remove(['f1_seen_settings_ver', 'f1_seen_settings_features']);
-      }
-    } catch (_) {}
-  }
 
   // Schedule calendar resync every 6 hours
   api.alarms.create('F1_CALENDAR_SYNC', { periodInMinutes: 360 });
@@ -51,6 +44,7 @@ api.runtime.onInstalled.addListener(async (details) => {
 
 api.runtime.onStartup.addListener(async () => {
   console.log('[F1 Alert] Browser started, verifying schedule...');
+  await initSettings();
   await syncCalendarAndSchedule();
   await checkQualifyingAndNotify();
 });
@@ -59,6 +53,14 @@ async function initSettings() {
   const data = await api.storage.local.get('f1_settings');
   if (!data.f1_settings) {
     await api.storage.local.set({ f1_settings: DEFAULT_SETTINGS });
+    return;
+  }
+  // Migrate legacy 0..1 float volume (e.g. 0.85) to 0..100 percentage in storage
+  const rawVol = data.f1_settings.volume;
+  if (typeof rawVol === 'number' && rawVol > 0 && rawVol < 1) {
+    await api.storage.local.set({
+      f1_settings: { ...data.f1_settings, volume: Math.round(rawVol * 100) }
+    });
   }
 }
 
@@ -68,8 +70,10 @@ async function getSettings() {
   const master = raw.alarmEnabled !== undefined ? raw.alarmEnabled : (raw.masterEnabled !== undefined ? raw.masterEnabled : true);
   const lead = raw.leadTime !== undefined ? raw.leadTime : (raw.leadMinutes !== undefined ? raw.leadMinutes : 5);
   const sound = raw.soundEnabled !== undefined ? raw.soundEnabled : (raw.alarmEnabled !== undefined ? raw.alarmEnabled : true);
-  let vol = raw.volume !== undefined ? raw.volume : 0.85;
-  if (vol > 1) vol = vol / 100;
+  let vol = raw.volume !== undefined ? Number(raw.volume) : 85;
+  if (isNaN(vol)) vol = 85;
+  // Values >= 1 are 0..100% from slider/storage; fractional 0<vol<1 are legacy floats
+  if (vol >= 1) vol = vol / 100;
 
   return {
     ...DEFAULT_SETTINGS,
@@ -81,6 +85,59 @@ async function getSettings() {
     soundEnabled: Boolean(sound),
     volume: Math.max(0, Math.min(1, vol))
   };
+}
+
+function createSafeNotification(notifId, baseOptions, allowStopButton = false) {
+  const opts = { ...baseOptions };
+  // Firefox desktop defines browser.notifications.onButtonClicked in MV3,
+  // but notifications.create throws when `buttons` is included.
+  const canUseButtons = allowStopButton && typeof browser === 'undefined' && Boolean(api.notifications?.onButtonClicked);
+  if (canUseButtons) {
+    opts.buttons = [{ title: 'Stop' }];
+  }
+  try {
+    const res = api.notifications.create(notifId, opts);
+    if (res && typeof res.catch === 'function') {
+      res.catch(() => {
+        if (opts.buttons) {
+          const fallbackOpts = { ...baseOptions };
+          api.notifications.create(notifId, fallbackOpts).catch(() => {});
+        }
+      });
+    }
+  } catch (_) {
+    if (opts.buttons) {
+      try {
+        api.notifications.create(notifId, { ...baseOptions });
+      } catch (__) {}
+    }
+  }
+}
+
+async function sendOffscreenAudio(payload, justification) {
+  if (typeof chrome === 'undefined' || !chrome['offscreen']) return;
+  try {
+    const hasDoc = chrome['offscreen']['hasDocument'] ? await chrome['offscreen']['hasDocument']() : false;
+    let createdNew = false;
+    if (!hasDoc) {
+      await chrome['offscreen']['createDocument']({
+        url: 'offscreen.html',
+        reasons: ['AUDIO_PLAYBACK'],
+        justification
+      });
+      createdNew = true;
+    }
+    try {
+      await chrome.runtime.sendMessage(payload);
+    } catch (_) {
+      if (createdNew) {
+        await new Promise(r => setTimeout(r, 150));
+        await chrome.runtime.sendMessage(payload).catch(() => {});
+      }
+    }
+  } catch (err) {
+    console.warn('[F1 Alert] Chromium offscreen audio error:', err);
+  }
 }
 
 // Reschedule immediately whenever settings change from popup UI
@@ -111,19 +168,7 @@ async function playRadioBeep(volume = 0.85) {
   }
 
   if (typeof chrome !== "undefined" && chrome['offscreen']) {
-    try {
-      const hasDoc = chrome['offscreen']['hasDocument'] ? await chrome['offscreen']['hasDocument']() : false;
-      if (!hasDoc) {
-        await chrome['offscreen']['createDocument']({
-          url: "offscreen.html",
-          reasons: ["AUDIO_PLAYBACK"],
-          justification: "F1 radio notification sound"
-        });
-      }
-      chrome.runtime.sendMessage({ action: "PLAY_RADIO", volume }).catch(() => {});
-    } catch (err) {
-      console.warn("[F1 Alert] Chromium offscreen radio error:", err);
-    }
+    await sendOffscreenAudio({ action: "PLAY_RADIO", volume }, "F1 radio notification sound");
   }
 }
 
@@ -258,19 +303,7 @@ async function playF1Theme(volume = 0.85) {
 
   // 2. Offscreen Audio (Chromium Service Worker: Chrome, Brave, Edge)
   if (typeof chrome !== 'undefined' && chrome['offscreen']) {
-    try {
-      const hasDoc = chrome['offscreen']['hasDocument'] ? await chrome['offscreen']['hasDocument']() : false;
-      if (!hasDoc) {
-        await chrome['offscreen']['createDocument']({
-          url: 'offscreen.html',
-          reasons: ['AUDIO_PLAYBACK'],
-          justification: 'F1 pre-session alert music'
-        });
-      }
-      chrome.runtime.sendMessage({ action: 'PLAY_ALARM', volume }).catch(() => {});
-    } catch (err) {
-      console.warn('[F1 Alert] Chromium offscreen audio error:', err);
-    }
+    await sendOffscreenAudio({ action: 'PLAY_ALARM', volume }, 'F1 pre-session alert music');
   }
 }
 
@@ -354,8 +387,24 @@ function extractWeekendSessions(race) {
   return sessions.sort((a, b) => a.startTime - b.startTime);
 }
 
-// Reschedules alarms based on current settings and calendar
+// Reschedules alarms based on current settings and calendar (serialized to avoid races)
 async function syncCalendarAndSchedule() {
+  if (isSyncingAlarms) {
+    pendingAlarmResync = true;
+    return;
+  }
+  isSyncingAlarms = true;
+  try {
+    do {
+      pendingAlarmResync = false;
+      await performAlarmSync();
+    } while (pendingAlarmResync);
+  } finally {
+    isSyncingAlarms = false;
+  }
+}
+
+async function performAlarmSync() {
   const settings = await getSettings();
   const races = await fetchCalendar();
   if (!races || races.length === 0) return;
@@ -363,13 +412,16 @@ async function syncCalendarAndSchedule() {
   const now = Date.now();
   const leadMs = (settings.leadMinutes || 5) * 60 * 1000;
 
-  // Clear existing session alarms
+  // Clear existing session & live-start alarms
   const allAlarms = await api.alarms.getAll();
   for (const alarm of allAlarms) {
-    if (alarm.name.startsWith('f1_sess_')) {
+    if (alarm.name.startsWith('f1_sess_') || alarm.name.startsWith('f1_live_')) {
       await api.alarms.clear(alarm.name);
     }
   }
+
+  const storedAlerted = await api.storage.local.get('f1_alerted_sessions');
+  const alertedIds = new Set(Array.isArray(storedAlerted.f1_alerted_sessions) ? storedAlerted.f1_alerted_sessions : []);
 
   const alarmMap = {};
   let nextSession = null;
@@ -384,14 +436,25 @@ async function syncCalendarAndSchedule() {
         if (!nextSession) nextSession = sess;
 
         const isTypeEnabled = settings.sessions?.[sess.sessionType] ?? true;
-        // Only schedule if within 7 days; background worker auto-syncs every 6 hours anyway
-        if (settings.masterEnabled && isTypeEnabled && sess.startTime <= (now + MAX_SCHEDULE_HORIZON_MS)) {
-          const triggerTime = sess.startTime - leadMs;
-          const alarmName = `f1_sess_${sess.id}_${sess.startTime}`;
+        if (sess.startTime <= (now + MAX_SCHEDULE_HORIZON_MS)) {
+          if (settings.masterEnabled && isTypeEnabled) {
+            const triggerTime = sess.startTime - leadMs;
+            const alarmName = `f1_sess_${sess.id}_${sess.startTime}`;
 
-          if (triggerTime > now) {
-            api.alarms.create(alarmName, { when: triggerTime });
-            alarmMap[alarmName] = { ...sess, triggerTime, leadMinutes: settings.leadMinutes };
+            if (triggerTime > now) {
+              api.alarms.create(alarmName, { when: triggerTime });
+              alarmMap[alarmName] = { ...sess, triggerTime, leadMinutes: settings.leadMinutes };
+            } else if (!alertedIds.has(alarmName)) {
+              // Browser opened inside the lead window before green light: schedule immediately once.
+              api.alarms.create(alarmName, { when: now + 1000 });
+              alarmMap[alarmName] = { ...sess, triggerTime: now + 1000, leadMinutes: Math.max(1, Math.round((sess.startTime - now) / 60000)) };
+            }
+          }
+
+          if (settings.pushEnabled && settings.pushLive) {
+            const liveAlarmName = `f1_live_${sess.id}_${sess.startTime}`;
+            api.alarms.create(liveAlarmName, { when: sess.startTime });
+            alarmMap[liveAlarmName] = { ...sess, triggerTime: sess.startTime };
           }
         }
       }
@@ -403,7 +466,7 @@ async function syncCalendarAndSchedule() {
     f1_next_session: nextSession
   });
 
-  console.log(`[F1 Alert] Scheduled ${Object.keys(alarmMap).length} upcoming session alarms. Next:`, nextSession?.raceName, nextSession?.sessionCode);
+  console.log(`[F1 Alert] Scheduled ${Object.keys(alarmMap).length} upcoming alarms. Next:`, nextSession?.raceName, nextSession?.sessionCode);
 }
 
 // ============================================================
@@ -414,49 +477,83 @@ api.alarms.onAlarm.addListener(async (alarm) => {
 
   if (alarm.name === 'F1_CALENDAR_SYNC') {
     await syncCalendarAndSchedule();
+    await checkQualifyingAndNotify();
     return;
   }
 
   if (alarm.name.startsWith('f1_sess_')) {
-    const data = await api.storage.local.get(["f1_scheduled_alarms"]);
+    const data = await api.storage.local.get(["f1_scheduled_alarms", "f1_alerted_sessions"]);
     const settings = await getSettings();
     const sessInfo = data.f1_scheduled_alarms?.[alarm.name];
 
     if (!settings.masterEnabled) return;
     if (sessInfo && settings.sessions?.[sessInfo.sessionType] === false) return;
 
+    const alerted = Array.isArray(data.f1_alerted_sessions) ? data.f1_alerted_sessions : [];
+    if (alerted.includes(alarm.name)) return;
+
     const sessionTitle = sessInfo ? `${sessInfo.sessionName} (${sessInfo.sessionCode})` : 'F1 Session';
     const raceTitle = sessInfo ? sessInfo.raceName : 'Grand Prix';
-    const leadMin = settings.leadMinutes || 5;
+    const leadMin = sessInfo?.leadMinutes || settings.leadMinutes || 5;
 
     // Sanity check: Ensure the session is ACTUALLY starting soon (guards against 32-bit timer overflows or stale alarms)
     if (sessInfo) {
       const now = Date.now();
       const diffToStart = sessInfo.startTime - now;
-      const maxDiff = Math.max(35, leadMin + 10) * 60 * 1000;
+      const maxDiff = Math.max(35, (settings.leadMinutes || 5) + 10) * 60 * 1000;
       if (diffToStart > maxDiff || diffToStart < -60 * 60 * 1000) {
         console.warn(`[F1 Alert] Ignored phantom alarm trigger: ${sessInfo.raceName} ${sessInfo.sessionCode} is ${Math.round(diffToStart / 60000)}m away.`);
         return;
       }
     }
 
-    // Trigger Notification
-    const notifOptions = {
+    const updatedAlerted = [...alerted.slice(-29), alarm.name];
+    await api.storage.local.set({ f1_alerted_sessions: updatedAlerted });
+
+    // Trigger Notification safely (never block audio playback if notification options fail)
+    createSafeNotification(alarm.name, {
       type: 'basic',
       iconUrl: api.runtime.getURL('assets/icon128.png'),
-      title: `🏎️ ${sessionTitle} starts in ${leadMin} minutes!`,
+      title: `🏎️ ${sessionTitle} starts in ${leadMin} minute${leadMin === 1 ? '' : 's'}!`,
       message: `${raceTitle} • Green light is approaching. Lights out soon! Click to open F1 Dash.`,
       priority: 2
-    };
-    if (api.notifications && api.notifications.onButtonClicked) {
-      notifOptions.buttons = [{ title: 'Stop' }];
-    }
-    api.notifications.create(alarm.name, notifOptions);
+    }, true);
 
     // Play Audio Alarm
     if (settings.soundEnabled) {
-      playF1Theme(settings.volume || 0.85);
+      playF1Theme(settings.volume);
     }
+  }
+
+  if (alarm.name.startsWith('f1_live_')) {
+    const data = await api.storage.local.get(["f1_scheduled_alarms", "f1_alerted_sessions"]);
+    const settings = await getSettings();
+    if (!settings.pushEnabled || !settings.pushLive) return;
+
+    const alerted = Array.isArray(data.f1_alerted_sessions) ? data.f1_alerted_sessions : [];
+    if (alerted.includes(alarm.name)) return;
+
+    const sessInfo = data.f1_scheduled_alarms?.[alarm.name];
+    if (sessInfo) {
+      const diffToStart = sessInfo.startTime - Date.now();
+      if (diffToStart > 10 * 60 * 1000 || diffToStart < -60 * 60 * 1000) return;
+    }
+
+    const updatedAlerted = [...alerted.slice(-29), alarm.name];
+    await api.storage.local.set({ f1_alerted_sessions: updatedAlerted });
+
+    const sessionTitle = sessInfo ? `${sessInfo.sessionName} (${sessInfo.sessionCode})` : 'F1 Session';
+    const raceTitle = sessInfo ? sessInfo.raceName : 'Grand Prix';
+
+    createSafeNotification(alarm.name, {
+      type: 'basic',
+      iconUrl: api.runtime.getURL('assets/icon128.png'),
+      title: `🟢 ${sessionTitle} is Underway!`,
+      message: `${raceTitle} • Session is now live! Open F1 Dash for the live timing tower.`,
+      priority: 2
+    }, false);
+
+    playRadioBeep(settings.volume);
   }
 });
 
@@ -548,18 +645,14 @@ api.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.action === 'TEST_ALARM') {
     const volume = typeof msg.volume === 'number' ? msg.volume : 0.85;
     
-    // Fire test notification
-    const testNotifOptions = {
+    // Fire test notification safely
+    createSafeNotification('f1_test_notification', {
       type: 'basic',
       iconUrl: api.runtime.getURL('assets/icon128.png'),
       title: '🏎️ F1 Live Alert: Alarm Test Active!',
       message: 'Lights out in 5 minutes! Playing official F1 Theme. Click to open F1 Dash.',
       priority: 2
-    };
-    if (api.notifications && api.notifications.onButtonClicked) {
-      testNotifOptions.buttons = [{ title: 'Stop' }];
-    }
-    api.notifications.create('f1_test_notification', testNotifOptions);
+    }, true);
 
     // Play audio
     playF1Theme(volume);
