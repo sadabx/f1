@@ -1,23 +1,30 @@
 # F1 Dash - Browser Extension
 
-A real-time Formula 1 browser extension built to bring your [F1 Live Dashboard](https://f1.trionine.com) schedule directly into your browser toolbar, notify you before every session (FP1, FP2, FP3, SQ, Sprint, Quali, Race), and blare the **official F1 Intro Theme 5 minutes before green light**!
+A real-time Formula 1 & Formula 2 browser extension built to bring your [F1 Live Dashboard](https://f1.trionine.com) schedule directly into your browser toolbar, with live telemetry, standings, results, and pre-session F1 Theme audio alarms before green light!
+
+- **Firefox Add-on:** [addons.mozilla.org/firefox/addon/f1-dash](https://addons.mozilla.org/firefox/addon/f1-dash/)
+- **Microsoft Edge Add-on:** [microsoftedge.microsoft.com/addons/detail/f1-dash](https://microsoftedge.microsoft.com/addons/detail/f1-dash/bhjaiaenljechcgogkioimliaeagjklj)
 
 ---
 
 ## Features
 
-- **Pre-Session Audio Alarm**: Automatically plays the iconic F1 intro theme before every session start (configurable from 5 to 30 mins).
-- **Session Selectors**: Enable or disable alerts for specific session types:
-  - Practice (FP1, FP2, FP3)
-  - Sprint Qualifying (SQ)
-  - Sprint Race
-  - Qualifying
-  - Grand Prix Race
-- **Configurable Lead Time**: Choose whether to be reminded 5 min (default), 10 min, 15 min, or 30 min before green light.
-- **Native Desktop Notifications**: Shows system notifications with the Grand Prix name, flag, session type, and exact start time.
-- **Live Countdown & Weekend Sessions**: Pop-up window with high-contrast live digital countdown to the next session and a schedule of the entire race weekend in your local timezone.
-- **Official F1 Design**: Styled with official Formula 1 vector branding and self-hosted Titillium Web & JetBrains Mono typography.
-- **Cross-Browser Support**: Native background page audio on Firefox, and Service Worker + Offscreen document audio on Chromium (Chrome, Brave, Edge, Opera).
+- **Live Countdown & Weekend Sessions:** High-contrast live digital countdown to the next session, full weekend timetable in your local timezone, 2026/2027 season coverage, and an optional **Formula 2 (F2)** switcher.
+- **Official Live Timing Tower:** Streams real-time F1 SignalR telemetry (lap/best times, intervals, leader gaps, pit indicators, tyre compounds) plus post-session final classifications.
+- **Standings, Results & Starting Grids:** Driver and Constructor championship standings, completed race podiums, and qualifying grids.
+- **Pre-Session Audio Alarm:** Plays the iconic F1 intro theme before every session start (configurable 5, 10, 15, or 30 minutes ahead) with volume and per-session filters (Practice, Sprint Shootout, Sprint, Qualifying, Grand Prix).
+- **Desktop Notifications & Team Radio Chimes:** System alerts for Starting Grid confirmation and Session Underway events.
+- **Cross-Browser Support:** Native background event page audio on Firefox, and Service Worker + Offscreen document audio on Chromium (Edge, Chrome, Brave, Opera).
+
+---
+
+## Structure
+
+- `manifest.json` — Firefox / default Manifest V3 manifest
+- `manifest.chrome.json` — Chromium Manifest V3 manifest (injected into `dist/chrome/manifest.json`)
+- `js/` — Modular extension scripts (`background.js`, `offscreen.js`, `utils.js`, `live.js`, `schedule.js`, `popup.js`)
+- `popup.html`, `popup.css`, `offscreen.html`, `assets/` — UI, fonts, icons, audio, and fallback calendars
+- `VERSION` & `package.sh` — Single-source version injection and packaging into `dist/`
 
 ---
 
@@ -39,18 +46,18 @@ A real-time Formula 1 browser extension built to bring your [F1 Live Dashboard](
    ```bash
    ./package.sh
    ```
-2. Open `chrome://extensions` (or `brave://extensions`).
+2. Open `chrome://extensions` (or `edge://extensions` / `brave://extensions`).
 3. Enable **Developer mode** (top right toggle).
-4. Click **"Load unpacked"** and select the `dist_chrome` folder.
+4. Click **"Load unpacked"** and select the `dist/chrome` folder.
 
 ---
 
 ## Building Packages
 
-Run the packaging script to generate production zip and xpi files:
+Run the packaging script (reads `VERSION` and updates both manifests) to generate production archives in `dist/`:
 ```bash
 ./package.sh
 ```
 Outputs:
-- `f1_dash.zip` / `f1_dash.xpi`: Ready for Mozilla Add-on Developer Hub.
-- `f1_dash_chrome.zip` / `dist_chrome/`: Ready for Chrome Web Store.
+- `dist/f1_dash.zip` / `dist/f1_dash.xpi`: Ready for Mozilla Add-on Developer Hub.
+- `dist/f1_dash_chrome.zip` / `dist/chrome/`: Ready for Edge Add-ons & Chrome Web Store.

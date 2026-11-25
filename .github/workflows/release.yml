@@ -52,7 +52,7 @@ jobs:
 
       - name: Verify Firefox AMO linter
         run: |
-          npx -y addons-linter extension/f1_dash.zip
+          npx -y addons-linter extension/dist/f1_dash.zip
 
       - name: Build release notes from commits
         shell: bash
@@ -91,7 +91,7 @@ jobs:
           VERSION: ${{ steps.release.outputs.version }}
         run: |
           set -euo pipefail
-          assets=(extension/f1_dash_chrome.zip extension/f1_dash.xpi extension/f1_dash.zip)
+          assets=(extension/dist/f1_dash_chrome.zip extension/dist/f1_dash.xpi extension/dist/f1_dash.zip)
 
           if ! gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             release_flags=(--draft --verify-tag --notes-file release-notes.md)
@@ -128,7 +128,7 @@ jobs:
               --channel=listed \
               --approval-timeout=0 \
               --amo-metadata=amo-metadata.json \
-              --ignore-files="package.sh" "manifest.chrome.json" "dist_chrome/**" "*.zip" "*.xpi"
+              --ignore-files="package.sh" "package.json" "VERSION" "manifest.chrome.json" "dist/**" "tests/**" "*.zip" "*.xpi"
           else
             echo "Mozilla AMO credentials not found, skipping Firefox Add-ons upload."
           fi
@@ -159,7 +159,7 @@ jobs:
           upload_status="$(curl --silent --show-error --output upload-response.json \
             --dump-header "$upload_headers" --write-out '%{http_code}' \
             "${headers[@]}" -H 'Content-Type: application/zip' \
-            --request POST --data-binary @extension/f1_dash_chrome.zip \
+            --request POST --data-binary @extension/dist/f1_dash_chrome.zip \
             "${api}/submissions/draft/package")"
 
           if [[ "$upload_status" != "202" ]]; then

@@ -3,7 +3,18 @@
 venv/
 scratch/
 graphify-out/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
 # Extension build artifacts
+extension/dist/
 extension/*.zip
 extension/*.xpi
-extension/dist_chrome/
+extension/zi*
+
+# Local extension test runner
+extension/tests/
+extension/package.json
