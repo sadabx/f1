@@ -6,7 +6,7 @@
           "DriverStandings": [
             {
               "position": "1",
-              "points": "380",
+              "points": "402",
               "Driver": {
                 "givenName": "Kimi",
                 "familyName": "Antonelli",
@@ -20,7 +20,7 @@
             },
             {
               "position": "2",
-              "points": "261",
+              "points": "304",
               "Driver": {
                 "givenName": "Max",
                 "familyName": "Verstappen",
@@ -34,7 +34,7 @@
             },
             {
               "position": "3",
-              "points": "259",
+              "points": "267",
               "Driver": {
                 "givenName": "Lewis",
                 "familyName": "Hamilton",
@@ -48,7 +48,7 @@
             },
             {
               "position": "4",
-              "points": "250",
+              "points": "264",
               "Driver": {
                 "givenName": "George",
                 "familyName": "Russell",
@@ -62,21 +62,7 @@
             },
             {
               "position": "5",
-              "points": "245",
-              "Driver": {
-                "givenName": "Charles",
-                "familyName": "Leclerc",
-                "code": "LEC"
-              },
-              "Constructors": [
-                {
-                  "name": "Ferrari"
-                }
-              ]
-            },
-            {
-              "position": "6",
-              "points": "221",
+              "points": "264",
               "Driver": {
                 "givenName": "Lando",
                 "familyName": "Norris",
@@ -89,8 +75,22 @@
               ]
             },
             {
+              "position": "6",
+              "points": "250",
+              "Driver": {
+                "givenName": "Charles",
+                "familyName": "Leclerc",
+                "code": "LEC"
+              },
+              "Constructors": [
+                {
+                  "name": "Ferrari"
+                }
+              ]
+            },
+            {
               "position": "7",
-              "points": "150",
+              "points": "167",
               "Driver": {
                 "givenName": "Oscar",
                 "familyName": "Piastri",
@@ -104,7 +104,7 @@
             },
             {
               "position": "8",
-              "points": "105",
+              "points": "122",
               "Driver": {
                 "givenName": "Isack",
                 "familyName": "Hadjar",
@@ -118,7 +118,7 @@
             },
             {
               "position": "9",
-              "points": "79",
+              "points": "89",
               "Driver": {
                 "givenName": "Liam",
                 "familyName": "Lawson",
@@ -132,7 +132,7 @@
             },
             {
               "position": "10",
-              "points": "43",
+              "points": "52",
               "Driver": {
                 "givenName": "Pierre",
                 "familyName": "Gasly",
@@ -160,7 +160,7 @@
             },
             {
               "position": "12",
-              "points": "31",
+              "points": "35",
               "Driver": {
                 "givenName": "Franco",
                 "familyName": "Colapinto",
@@ -188,21 +188,7 @@
             },
             {
               "position": "14",
-              "points": "13",
-              "Driver": {
-                "givenName": "Nico",
-                "familyName": "Hulkenberg",
-                "code": "HUL"
-              },
-              "Constructors": [
-                {
-                  "name": "Audi"
-                }
-              ]
-            },
-            {
-              "position": "15",
-              "points": "10",
+              "points": "14",
               "Driver": {
                 "givenName": "Gabriel",
                 "familyName": "Bortoleto",
@@ -215,7 +201,35 @@
               ]
             },
             {
+              "position": "15",
+              "points": "14",
+              "Driver": {
+                "givenName": "Nico",
+                "familyName": "Hulkenberg",
+                "code": "HUL"
+              },
+              "Constructors": [
+                {
+                  "name": "Audi"
+                }
+              ]
+            },
+            {
               "position": "16",
+              "points": "11",
+              "Driver": {
+                "givenName": "Carlos",
+                "familyName": "Sainz",
+                "code": "SAI"
+              },
+              "Constructors": [
+                {
+                  "name": "Williams"
+                }
+              ]
+            },
+            {
+              "position": "17",
               "points": "7",
               "Driver": {
                 "givenName": "Esteban",
@@ -229,7 +243,7 @@
               ]
             },
             {
-              "position": "17",
+              "position": "18",
               "points": "7",
               "Driver": {
                 "givenName": "Fernando",
@@ -239,20 +253,6 @@
               "Constructors": [
                 {
                   "name": "Aston Martin"
-                }
-              ]
-            },
-            {
-              "position": "18",
-              "points": "7",
-              "Driver": {
-                "givenName": "Carlos",
-                "familyName": "Sainz",
-                "code": "SAI"
-              },
-              "Constructors": [
-                {
-                  "name": "Williams"
                 }
               ]
             },
@@ -286,6 +286,20 @@
             },
             {
               "position": "21",
+              "points": "1",
+              "Driver": {
+                "givenName": "Ryo",
+                "familyName": "Hirakawa",
+                "code": "HIR"
+              },
+              "Constructors": [
+                {
+                  "name": "Haas F1 Team"
+                }
+              ]
+            },
+            {
+              "position": "22",
               "points": "0",
               "Driver": {
                 "givenName": "Lance",
@@ -299,7 +313,7 @@
               ]
             },
             {
-              "position": "22",
+              "position": "23",
               "points": "0",
               "Driver": {
                 "givenName": "Valtteri",
@@ -309,20 +323,6 @@
               "Constructors": [
                 {
                   "name": "Cadillac"
-                }
-              ]
-            },
-            {
-              "position": "23",
-              "points": "0",
-              "Driver": {
-                "givenName": "Ryo",
-                "familyName": "Hirakawa",
-                "code": "HIR"
-              },
-              "Constructors": [
-                {
-                  "name": "Haas F1 Team"
                 }
               ]
             },
@@ -339,6 +339,110 @@
                   "name": "Cadillac"
                 }
               ]
+            },
+            {
+              "position": "25",
+              "points": "0",
+              "Driver": {
+                "givenName": "Rafael",
+                "familyName": "Camara",
+                "code": "CAM"
+              },
+              "Constructors": [
+                {
+                  "name": "Haas F1 Team"
+                }
+              ]
+            }
+          ],
+          "ConstructorStandings": [
+            {
+              "position": "1",
+              "points": "666",
+              "Constructor": {
+                "constructorId": "mercedes",
+                "name": "Mercedes"
+              }
+            },
+            {
+              "position": "2",
+              "points": "517",
+              "Constructor": {
+                "constructorId": "ferrari",
+                "name": "Ferrari"
+              }
+            },
+            {
+              "position": "3",
+              "points": "440",
+              "Constructor": {
+                "constructorId": "red_bull_racing",
+                "name": "Red Bull Racing"
+              }
+            },
+            {
+              "position": "4",
+              "points": "431",
+              "Constructor": {
+                "constructorId": "mclaren",
+                "name": "McLaren"
+              }
+            },
+            {
+              "position": "5",
+              "points": "114",
+              "Constructor": {
+                "constructorId": "racing_bulls",
+                "name": "Racing Bulls"
+              }
+            },
+            {
+              "position": "6",
+              "points": "87",
+              "Constructor": {
+                "constructorId": "alpine",
+                "name": "Alpine"
+              }
+            },
+            {
+              "position": "7",
+              "points": "31",
+              "Constructor": {
+                "constructorId": "haas_f1_team",
+                "name": "Haas F1 Team"
+              }
+            },
+            {
+              "position": "8",
+              "points": "28",
+              "Constructor": {
+                "constructorId": "audi",
+                "name": "Audi"
+              }
+            },
+            {
+              "position": "9",
+              "points": "16",
+              "Constructor": {
+                "constructorId": "williams",
+                "name": "Williams"
+              }
+            },
+            {
+              "position": "10",
+              "points": "7",
+              "Constructor": {
+                "constructorId": "aston_martin",
+                "name": "Aston Martin"
+              }
+            },
+            {
+              "position": "11",
+              "points": "0",
+              "Constructor": {
+                "constructorId": "cadillac",
+                "name": "Cadillac"
+              }
             }
           ]
         }

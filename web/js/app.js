@@ -211,6 +211,7 @@ let showPast = false,
   races = [],
   completed = [],
   standings = [],
+  constructorStandings = [],
   latestQuali = null,
   collapsed = {},
   mobileSections = { upcoming: true, past: false },
@@ -417,7 +418,9 @@ async function fetchCustomData() {
       }
     });
 
-    const standings = dd.MRData?.StandingsTable?.StandingsLists?.[0]?.DriverStandings || [];
+    const standingsListObj = dd.MRData?.StandingsTable?.StandingsLists?.[0] || {};
+    const standings = standingsListObj.DriverStandings || [];
+    const constructors = standingsListObj.ConstructorStandings || [];
     standings.forEach(std => {
       if (std.Driver) {
         cleanDriver(std.Driver);
@@ -439,11 +442,12 @@ async function fetchCustomData() {
     return {
       completed: completed,
       standings: standings,
+      constructors: constructors,
       qualis: qualis
     };
   } catch (e) {
     console.error("❌ Custom data fetch failed:", e);
-    return { completed: [], standings: [], qualis: [] };
+    return { completed: [], standings: [], constructors: [], qualis: [] };
   }
 }
 
@@ -898,7 +902,33 @@ function renderResults() {
   document.getElementById("tc-res").innerHTML = h || `<div class="empty">${emptyResultsMsg}</div>`;
 }
 
-function getConstructorStandings(driverStandings) {
+function getConstructorStandings(driverStandings, officialConstructors = []) {
+  const teamDrivers = {};
+  (driverStandings || []).forEach((d) => {
+    const teamName = d.Constructors?.[0]?.name || "Unknown";
+    const driverCode = d.Driver?.code || d.Driver?.familyName || "";
+    if (!teamDrivers[teamName]) teamDrivers[teamName] = [];
+    if (driverCode && !teamDrivers[teamName].includes(driverCode)) {
+      teamDrivers[teamName].push(driverCode);
+    }
+  });
+
+  if (Array.isArray(officialConstructors) && officialConstructors.length > 0) {
+    return officialConstructors
+      .slice()
+      .sort((a, b) => (parseInt(a.position, 10) || 99) - (parseInt(b.position, 10) || 99))
+      .map((c, idx) => {
+        const name = c.Constructor?.name || "Unknown";
+        const constructorId = c.Constructor?.constructorId || name.toLowerCase().replace(/[^a-z0-9]/g, "_");
+        return {
+          position: String(c.position || idx + 1),
+          points: String(c.points || 0),
+          Constructor: { name, constructorId },
+          drivers: teamDrivers[name] || []
+        };
+      });
+  }
+
   if (!driverStandings || !driverStandings.length) return [];
   const teams = {};
   driverStandings.forEach((d) => {
@@ -906,20 +936,16 @@ function getConstructorStandings(driverStandings) {
     const teamName = constructor.name || "Unknown";
     const teamId = constructor.constructorId || teamName.toLowerCase().replace(/[^a-z0-9]/g, "_");
     const pts = parseFloat(d.points) || 0;
-    const driverCode = d.Driver?.code || d.Driver?.familyName || "";
 
     if (!teams[teamName]) {
       teams[teamName] = {
         name: teamName,
         constructorId: teamId,
         points: 0,
-        drivers: []
+        drivers: teamDrivers[teamName] || []
       };
     }
     teams[teamName].points += pts;
-    if (driverCode && !teams[teamName].drivers.includes(driverCode)) {
-      teams[teamName].drivers.push(driverCode);
-    }
   });
 
   return Object.values(teams)
@@ -960,7 +986,7 @@ function renderStandings() {
   if (standingsSkeleton) standingsSkeleton.style.display = "none";
 
   if (standingsViewMode === "constructors") {
-    const teams = getConstructorStandings(standings);
+    const teams = getConstructorStandings(standings, constructorStandings);
     const maxPts = Math.max(...teams.map((t) => parseFloat(t.points) || 0), 1);
     let h = "";
     teams.forEach((t, index) => {
@@ -1087,6 +1113,7 @@ async function fetchAll() {
     // Update global data from custom endpoints
     completed = customData.completed;
     standings = customData.standings;
+    constructorStandings = customData.constructors || [];
     const qualis = customData.qualis;
     latestQuali = qualis.length > 0 ? qualis[qualis.length - 1] : null;
 

@@ -208,10 +208,44 @@ def scrape_standings():
                 "Constructors": [{"name": str(row.iloc[car_idx]).strip()}]
             })
 
+        # Also scrape official Constructor Standings directly (summing driver points
+        # breaks whenever drivers swap teams mid-season).
+        constructor_list = []
+        try:
+            team_url = f"https://www.formula1.com/en/results.html/{CURRENT_YEAR}/team.html"
+            team_res = requests.get(team_url, headers=headers, timeout=15)
+            if team_res.status_code == 200:
+                team_tables = pd.read_html(io.StringIO(team_res.text))
+                if team_tables:
+                    tdf = team_tables[0]
+                    t_pos_idx = get_column_by_substring(tdf, ['pos', 'position'])
+                    if t_pos_idx is None: t_pos_idx = 0
+                    t_name_idx = get_column_by_substring(tdf, ['team', 'constructor'])
+                    if t_name_idx is None: t_name_idx = 1
+                    t_pts_idx = get_column_by_substring(tdf, ['pts', 'points'])
+                    if t_pts_idx is None: t_pts_idx = 2
+
+                    for _, trow in tdf.iterrows():
+                        t_name = str(trow.iloc[t_name_idx]).strip()
+                        constructor_list.append({
+                            "position": str(trow.iloc[t_pos_idx]).strip(),
+                            "points": str(trow.iloc[t_pts_idx]).strip(),
+                            "Constructor": {
+                                "constructorId": re.sub(r'[^a-z0-9]+', '_', t_name.lower()).strip('_'),
+                                "name": t_name
+                            }
+                        })
+        except Exception as team_err:
+            print(f"⚠️ Warning: Could not scrape constructor standings: {team_err}")
+
+        standings_entry = {"DriverStandings": standings_list}
+        if constructor_list:
+            standings_entry["ConstructorStandings"] = constructor_list
+
         ergast_json = {
             "MRData": {
                 "StandingsTable": {
-                    "StandingsLists": [{"DriverStandings": standings_list}]
+                    "StandingsLists": [standings_entry]
                 }
             }
         }

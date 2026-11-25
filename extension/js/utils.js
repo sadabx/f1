@@ -70,8 +70,11 @@ var TEAM_COLORS = {
   'Williams': '#64C4FF',
   'RB': '#6692FF',
   'VCARB': '#6692FF',
+  'Racing Bulls': '#6692FF',
   'Kick Sauber': '#52E252',
   'Sauber': '#52E252',
+  'Audi': '#b9b9b9',
+  'Cadillac': '#9aa0a6',
   'Haas': '#B6BABD',
   'Haas F1 Team': '#B6BABD'
 };

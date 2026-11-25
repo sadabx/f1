@@ -390,27 +390,44 @@ function renderStandings() {
 
     setSafeContent(container, `<div class="standings-list">${driversHtml}</div>`);
   } else {
-    // Constructors Standings
+    // Constructors Standings: prefer official ConstructorStandings (handles mid-season
+    // driver swaps accurately), falling back to summing DriverStandings if absent.
     const drivers = list.DriverStandings || [];
-    const teamMap = {};
+    const teamDrivers = {};
+    const summedTeamMap = {};
     drivers.forEach(d => {
       const team = d.Constructors?.[0]?.name || "Other";
       const pts = parseFloat(d.points) || 0;
       const code = d.Driver?.code || d.Driver?.familyName || "";
-      if (!teamMap[team]) {
-        teamMap[team] = { name: team, points: 0, drivers: [] };
-      }
-      teamMap[team].points += pts;
-      if (code && !teamMap[team].drivers.includes(code)) {
-        teamMap[team].drivers.push(code);
-      }
+      if (!teamDrivers[team]) teamDrivers[team] = [];
+      if (code && !teamDrivers[team].includes(code)) teamDrivers[team].push(code);
+
+      if (!summedTeamMap[team]) summedTeamMap[team] = { name: team, points: 0, drivers: teamDrivers[team] };
+      summedTeamMap[team].points += pts;
     });
 
-    const sortedTeams = Object.values(teamMap).sort((a, b) => b.points - a.points);
+    const officialConstructors = Array.isArray(list.ConstructorStandings) && list.ConstructorStandings.length > 0
+      ? list.ConstructorStandings
+      : null;
+
+    const sortedTeams = officialConstructors
+      ? officialConstructors.map((c, idx) => {
+          const name = c.Constructor?.name || "Other";
+          return {
+            position: parseInt(c.position, 10) || (idx + 1),
+            name,
+            points: parseFloat(c.points) || 0,
+            drivers: teamDrivers[name] || []
+          };
+        }).sort((a, b) => a.position - b.position)
+      : Object.values(summedTeamMap)
+          .sort((a, b) => b.points - a.points)
+          .map((t, idx) => ({ ...t, position: idx + 1 }));
+
     const maxTeamPts = Math.max(...sortedTeams.map(t => t.points), 1);
 
     const teamsHtml = sortedTeams.map((t, idx) => {
-      const pos = idx + 1;
+      const pos = t.position || (idx + 1);
       const color = getTeamColor(t.name);
       const pct = Math.min(100, Math.max(8, (t.points / maxTeamPts) * 100));
       const driverPair = t.drivers.join(" / ");
